@@ -3,7 +3,7 @@ from duckietown_msgs.msg import Twist2DStamped
 
 class PredefinedCarRoutine:
     # Fixed durations for each type of movement (in seconds)
-    STRAIGHT_DURATION = 4.0
+    STRAIGHT_DURATION = 5.0
     TURN_RIGHT_DURATION = 1.5
     TURN_LEFT_DURATION = 3.3
     STOP_DURATION = 0.5
@@ -23,7 +23,7 @@ class PredefinedCarRoutine:
         :param velocity: Linear velocity for forward motion.
         """
         self._v = 0.25
-        self._omega = -0.0
+        self._omega = -0.6
         self._publish_command()
 
     def turn_left(self):

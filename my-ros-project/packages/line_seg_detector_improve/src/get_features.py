@@ -263,7 +263,7 @@ def calculate_lane_error(trajectory, yellow_points, white_points, start_idx):
     for i, pos in enumerate(trajectory[start_idx:]):
         nearest_yellow = None
         nearest_white = None
-        dist_yellow = 12
+        dist_yellow = 10
         dist_white = 10
         
         # Process yellow points if they exist

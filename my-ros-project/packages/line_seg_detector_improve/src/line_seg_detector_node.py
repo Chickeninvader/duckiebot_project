@@ -188,7 +188,9 @@ class LineSegmentCheckerNode(DTROS):
             self.log('No yellow segments')
 
         
-        yellow_weight_mask, white_weight_mask, yellow_distance, white_distance, steer = get_trajectory_and_error(yellow_segments, white_segments)
+        yellow_weight_mask, white_weight_mask, yellow_distance, white_distance, steer = get_trajectory_and_error(
+            yellow_segments, white_segments, start_yellow=start_yellow, start_white=start_white
+        )
 
         steer_scaled = (
             np.sign(steer)

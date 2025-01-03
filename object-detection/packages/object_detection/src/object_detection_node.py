@@ -149,7 +149,7 @@ class ObjectDetectionNode(DTROS):
             if not isinstance(cls, int) or not 0 <= cls <= 4:
                 continue
                 
-            if (cls in [0, 1] and score <= 0.5) or (cls not in [0, 1] and score <= 0.15):
+            if (cls in [0, 1] and score <= 0.5) or (cls not in [0, 1] and score <= 0.5):
                 continue
 
             # Traffic Light Processing

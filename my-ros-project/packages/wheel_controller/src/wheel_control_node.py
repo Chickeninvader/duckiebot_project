@@ -190,15 +190,16 @@ class WheelControlNode(DTROS):
             bbox_size = bbox.w * bbox.h  # Calculate the size of the bounding box
 
             if obj_type == 4:  # Stop sign
-                if bbox_size > STOP_SIGN_SIZE_THRESHOLD:  # Check if size exceeds the threshold
-                    current_time = rospy.get_time()
-                    # Only increment if within a reasonable time window (e.g., 2 seconds)
-                    if current_time - self._last_stop_sign_time < 2.0:
-                        self._stop_sign_detected += 1
-                    else:
-                        # If too much time has passed, reset the counter
-                        self._stop_sign_detected = 0
-                    self._last_stop_sign_time = current_time
+                # if bbox_size > STOP_SIGN_SIZE_THRESHOLD:  # Check if size exceeds the threshold
+                current_time = rospy.get_time()
+                # Only increment if within a reasonable time window (e.g., 2 seconds)
+                if current_time - self._last_stop_sign_time < 2.0:
+                    self._stop_sign_detected += 1
+                else:
+                    # If too much time has passed, reset the counter
+                    self._stop_sign_detected = 0
+                self._last_stop_sign_time = current_time
+                self._stop_sign_detected += 1
             elif obj_type in [0, 1]:  # Duck or Duckiebot
                 self._duck_detected = True
             elif obj_type == 30 and self._state == 'state4':  # Red light detection in a specific state
@@ -226,8 +227,8 @@ class WheelControlNode(DTROS):
         message.omega = self._omega
         self._wheel_publisher.publish(message)
         # Log the current velocities
-        log_message = f"Velocities: linear={self._v:.3f}, angular={self._omega:.3f}"
-        self.log(log_message)
+        # log_message = f"Velocities: linear={self._v:.3f}, angular={self._omega:.3f}"
+        # self.log(log_message)
 
     def publish_FSM(self):
         message = String()
@@ -272,7 +273,7 @@ class WheelControlNode(DTROS):
                     self.log(f'enter {self._state}')
                     self.publish_twist()
                     self.log(f"State2 running phase: Time elapsed = {current_time - state2_start_time:.2f}s")
-                    if current_time - state2_start_time >= 5.0:
+                    if current_time - state2_start_time >= 3.0:
                         state2_phase = "stopping"
                         state2_start_time = current_time
                         self.log("State2: Transitioning to stopping phase")
