@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Object Detection
+Comment=MOOC - Object Detection - Neural Network - Model Test
+Exec=/usr/bin/launch-nn-model-test.sh
+Icon=/root/.icons/object-detection.png
+Terminal=false
+X-KeepTerminal=false
+StartupNotify=true

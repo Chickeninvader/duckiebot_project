@@ -1,0 +1,11 @@
+<launch>
+	<arg name="node_name" value="wheel_control_node"/>
+	<arg name="veh" doc="Name of vehicle. ex: megaman"/>
+
+	<group ns="$(arg veh)">
+	    <node pkg="wheel_controller" type="wheel_control_node.py"  name="$(arg node_name)" output="screen">
+		</node>
+		<!-- output="screen" -->
+	</group>
+
+</launch>

@@ -1,0 +1,27 @@
+img_size: [120,160]
+top_cutoff: 40
+
+colors:
+  RED:
+    low_1: [0,100,100]
+    high_1: [15,255,255]
+    low_2: [165,100,100]
+    high_2: [180,255,255]
+  WHITE:
+    low_1: [0,0,130]
+    high_1: [15,80,255]
+    low_2: [45,0,130]
+    high_2: [180,80,255]
+    low_3: [15,0,80] #[20,50,80] # old value [25,140,100]
+    high_3: [45,30,255]
+  YELLOW:
+    low: [15,30,80] #[20,50,80] # old value [25,140,100]
+    high: [45,255,255]
+
+line_detector_parameters:
+  canny_thresholds: [80,200]
+  canny_aperture_size: 3
+  dilation_kernel_size: 3
+  hough_threshold: 2
+  hough_min_line_length: 3
+  hough_max_line_gap: 1

@@ -1,0 +1,25 @@
+# LIST YOUR PYTHON3 PACKAGES HERE
+aido-protocols-daffy
+duckietown-world-daffy
+
+# this is not HEAD, due to some issues with unashable objects (see DTSW-2042)
+git+https://github.com/duckietown/gym-duckietown.git@daffy-mooc2022
+
+# library shared between the agent and colab
+git+https://github.com/duckietown/lib-dt-mooc@v0.0.5
+
+# needed by YOLOv5
+gitpython
+
+pyglet==1.5.15
+
+# used to interface with the DCSS
+dt-data-api>=2.1.0,<3
+
+# numpy (pinned version is needed due to incompatibilities with duckietown-world)
+numpy==1.20.0
+# pandas (pinned version is to avoid this: https://stackoverflowteams.com/c/duckietown/questions/2673)
+pandas==1.4.4
+
+# ipython (not needed directly but we need to pin the latest version compatible with Python3.7)
+ipython==7.34.0

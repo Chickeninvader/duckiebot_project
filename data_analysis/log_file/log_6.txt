@@ -1,0 +1,743 @@
+// turn right
+Docker Endpoint:
+  Hostname: chicinvabot
+  Operating System: Ubuntu 18.04.6 LTS
+  Kernel Version: 4.9.140-tegra
+  OSType: linux
+  Architecture: aarch64
+  Total Memory: 3.87 GB
+  CPUs: 4
+
+2024-12-29 11:48:33 duckie-Surface-Book-2 dts[79121] INFO Running an image for arm64v8 on aarch64.
+2024-12-29 11:48:33 duckie-Surface-Book-2 dts[79121] INFO Running an image for arm64v8 on aarch64. Multiarch not needed!
+==> Entrypoint
+   INFO: The environment variable VEHICLE_NAME is not set. Using 'chicinvabot'.
+   INFO: Network configured successfully.
+<== Entrypoint
+==> Launching app...
+master has started, initiating launch
+... logging to /tmp/log/5c41d408-c614-11ef-b76c-001325aeb2e6/roslaunch-chicinvabot-55.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+
+started roslaunch server http://chicinvabot.local:45491/
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: noetic
+ * /rosversion: 1.16.0
+
+NODES
+  /chicinvabot/
+    line_seg_check (line_seg_detector_improve/line_seg_detector_node.py)
+    wheel_control_node (wheel_controller/wheel_control_node.py)
+
+ROS_MASTER_URI=http://chicinvabot.local:11311/
+
+process[chicinvabot/line_seg_check-1]: started with pid [66]
+process[chicinvabot/wheel_control_node-2]: started with pid [67]
+[INFO] [1735498123.586556]: [/chicinvabot/wheel_control_node] Initializing...
+[INFO] [1735498123.798348]: [/chicinvabot/wheel_control_node] Health status changed [STARTING] -> [STARTED]
+[INFO] [1735498123.956659]: [/chicinvabot/wheel_control_node] WheelControlNode initialized.
+[INFO] [1735498129.284569]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498129.292413]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 5.480601 seconds
+[INFO] [1735498129.310874]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.000
+[INFO] [1735498129.344177]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498129.360889]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.068400 seconds
+[INFO] [1735498129.377847]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.805
+[INFO] [1735498129.389344]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498129.401751]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.040933 seconds
+[INFO] [1735498129.420944]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.124
+[INFO] [1735498129.437710]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498129.453351]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.051614 seconds
+[INFO] [1735498129.467801]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.128
+[INFO] [1735498129.481653]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498129.492153]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.038769 seconds
+[INFO] [1735498129.501877]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=4.504
+[INFO] [1735498129.561200]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498129.571941]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.079840 seconds
+[INFO] [1735498129.582346]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.514
+[INFO] [1735498129.656958]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498129.665441]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.093529 seconds
+[INFO] [1735498129.671463]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.602
+[INFO] [1735498129.764421]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498129.771586]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.106085 seconds
+[INFO] [1735498129.780672]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.619
+[INFO] [1735498129.828680]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498129.840415]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.068788 seconds
+[INFO] [1735498129.846843]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.976
+[INFO] [1735498129.904396]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498129.910237]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069906 seconds
+[INFO] [1735498129.916060]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.144
+[INFO] [1735498129.989559]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498129.997555]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.087297 seconds
+[INFO] [1735498130.003541]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.151
+[INFO] [1735498130.086097]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498130.094293]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.096760 seconds
+[INFO] [1735498130.116262]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=4.438
+[INFO] [1735498130.143838]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498130.151083]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.056789 seconds
+[INFO] [1735498130.159909]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-6.162
+[INFO] [1735498130.227347]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498130.233104]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.082012 seconds
+[INFO] [1735498130.241657]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.446
+[INFO] [1735498130.324884]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498130.331161]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.098050 seconds
+[INFO] [1735498130.337603]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.901
+[INFO] [1735498130.380606]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498130.388419]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.057231 seconds
+[INFO] [1735498130.400083]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.143
+[INFO] [1735498130.456720]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498130.463752]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.075375 seconds
+[INFO] [1735498130.474803]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.149
+[INFO] [1735498130.527659]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498130.534461]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.070719 seconds
+[INFO] [1735498130.546601]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.721
+[INFO] [1735498130.600351]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498130.608950]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.074444 seconds
+[INFO] [1735498130.615946]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.737
+[INFO] [1735498130.680653]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498130.687893]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.078967 seconds
+[INFO] [1735498130.704415]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.616
+[INFO] [1735498130.747306]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498130.754064]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.066155 seconds
+[INFO] [1735498130.760409]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.768
+[INFO] [1735498130.814216]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498130.821258]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.067224 seconds
+[INFO] [1735498130.826976]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.022
+[INFO] [1735498130.893391]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498130.902785]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.080171 seconds
+[INFO] [1735498130.915876]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.171
+[INFO] [1735498130.955712]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498130.965220]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.062980 seconds
+[INFO] [1735498130.974377]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.176
+[INFO] [1735498131.035691]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498131.043655]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.079162 seconds
+[INFO] [1735498131.051186]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.182
+[INFO] [1735498131.085131]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498131.093062]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.049498 seconds
+[INFO] [1735498131.100499]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.037
+[INFO] [1735498131.150727]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498131.157235]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.064168 seconds
+[INFO] [1735498131.164018]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.129
+[INFO] [1735498131.207786]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498131.221333]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.064000 seconds
+[INFO] [1735498131.243715]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.092
+[INFO] [1735498131.289673]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498131.296216]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.074985 seconds
+[INFO] [1735498131.307400]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.631
+[INFO] [1735498131.346075]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498131.355565]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.059277 seconds
+[INFO] [1735498131.365051]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.139
+[INFO] [1735498131.402662]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498131.413163]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.056476 seconds
+[INFO] [1735498131.420425]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.098
+[INFO] [1735498131.441043]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498131.448004]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.035995 seconds
+[INFO] [1735498131.454868]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=13.314
+[INFO] [1735498131.511830]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498131.517367]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069388 seconds
+[INFO] [1735498131.524168]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-4.803
+[INFO] [1735498131.577143]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498131.583917]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.066472 seconds
+[INFO] [1735498131.590935]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-2.592
+[INFO] [1735498131.631946]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498131.638078]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.054195 seconds
+[INFO] [1735498131.644037]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-2.236
+[INFO] [1735498131.720242]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498131.728166]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.090124 seconds
+[INFO] [1735498131.742085]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.113
+[INFO] [1735498131.796678]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498131.807486]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.079185 seconds
+[INFO] [1735498131.824835]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.460
+[INFO] [1735498131.856860]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498131.863211]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.055821 seconds
+[INFO] [1735498131.871237]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.085
+[INFO] [1735498131.900476]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498131.905919]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.042763 seconds
+[INFO] [1735498131.912829]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=14.009
+[INFO] [1735498131.993536]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498132.008444]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.102509 seconds
+[INFO] [1735498132.015967]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-6.279
+[INFO] [1735498132.079415]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498132.086686]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.078197 seconds
+[INFO] [1735498132.094584]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.696
+[INFO] [1735498132.157274]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498132.166965]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.080358 seconds
+[INFO] [1735498132.179374]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.040
+[INFO] [1735498132.240233]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498132.253641]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.086678 seconds
+[INFO] [1735498132.269038]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.040
+[INFO] [1735498132.302802]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498132.320043]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.062207 seconds
+[INFO] [1735498132.335117]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.040
+[INFO] [1735498132.370671]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498132.378441]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.062519 seconds
+[INFO] [1735498132.389966]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.941
+[INFO] [1735498132.433802]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498132.439556]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.061039 seconds
+[INFO] [1735498132.451880]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.981
+[INFO] [1735498132.519862]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498132.531984]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.092480 seconds
+[INFO] [1735498132.540712]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.038
+[INFO] [1735498132.598400]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498132.611966]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.080003 seconds
+[INFO] [1735498132.621489]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.818
+[INFO] [1735498132.662328]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498132.676553]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.064630 seconds
+[INFO] [1735498132.682645]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.704
+[INFO] [1735498132.746578]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498132.760015]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.083457 seconds
+[INFO] [1735498132.769358]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-2.104
+[INFO] [1735498132.813838]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498132.825832]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.065575 seconds
+[INFO] [1735498132.839227]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.972
+[INFO] [1735498132.888434]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498132.920708]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.095121 seconds
+[INFO] [1735498132.926452]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.097
+[INFO] [1735498132.950959]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498132.957725]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.037014 seconds
+[INFO] [1735498132.964460]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=7.977
+[INFO] [1735498133.060105]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498133.067727]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.109993 seconds
+[INFO] [1735498133.080117]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-2.714
+[INFO] [1735498133.129956]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498133.137400]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069686 seconds
+[INFO] [1735498133.144829]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.562
+[INFO] [1735498133.194501]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498133.201383]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.063982 seconds
+[INFO] [1735498133.213013]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-2.794
+[INFO] [1735498133.246511]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498133.256585]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.055214 seconds
+[INFO] [1735498133.266022]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=12.037
+[INFO] [1735498133.338034]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498133.349582]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.092950 seconds
+[INFO] [1735498133.355194]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-6.211
+[INFO] [1735498133.401224]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498133.416761]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.067184 seconds
+[INFO] [1735498133.430769]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.014
+[INFO] [1735498133.471830]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498133.478534]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.061808 seconds
+[INFO] [1735498133.489421]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=6.929
+[INFO] [1735498133.544951]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498133.554645]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.076060 seconds
+[INFO] [1735498133.563955]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-5.298
+[INFO] [1735498133.610089]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498133.620001]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.065402 seconds
+[INFO] [1735498133.627347]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=6.588
+[INFO] [1735498133.683380]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498133.706668]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.086669 seconds
+[INFO] [1735498133.712438]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-4.632
+[INFO] [1735498133.755231]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498133.761433]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.054745 seconds
+[INFO] [1735498133.767415]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.020
+[INFO] [1735498133.833425]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498133.843830]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.081968 seconds
+[INFO] [1735498133.854625]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.743
+[INFO] [1735498133.905249]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498133.915616]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.072199 seconds
+[INFO] [1735498133.924862]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.389
+[INFO] [1735498133.972068]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498133.987582]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071927 seconds
+[INFO] [1735498133.998375]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.068
+[INFO] [1735498134.024766]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498134.042337]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.054811 seconds
+[INFO] [1735498134.050205]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=6.939
+[INFO] [1735498134.099019]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498134.104801]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.062479 seconds
+[INFO] [1735498134.111766]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-9.162
+[INFO] [1735498134.184999]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498134.191525]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.086645 seconds
+[INFO] [1735498134.197478]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.960
+[INFO] [1735498134.247833]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498134.255006]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.063576 seconds
+[INFO] [1735498134.260658]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.209
+[INFO] [1735498134.304953]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498134.312866]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.057843 seconds
+[INFO] [1735498134.321527]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-5.827
+[INFO] [1735498134.368972]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498134.379109]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.065999 seconds
+[INFO] [1735498134.389616]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.150
+[INFO] [1735498134.424791]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498134.430786]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.051913 seconds
+[INFO] [1735498134.439079]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.660
+[INFO] [1735498134.518702]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498134.524832]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.094069 seconds
+[INFO] [1735498134.536008]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.019
+[INFO] [1735498134.587941]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498134.593919]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069076 seconds
+[INFO] [1735498134.605371]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-2.262
+[INFO] [1735498134.657325]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498134.672894]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.079002 seconds
+[INFO] [1735498134.693577]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.035
+[INFO] [1735498134.749843]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498134.762142]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.089190 seconds
+[INFO] [1735498134.777919]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.391
+[INFO] [1735498134.843430]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498134.851317]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.089196 seconds
+[INFO] [1735498134.857387]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.262
+[INFO] [1735498134.915509]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498134.921463]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.070119 seconds
+[INFO] [1735498134.928615]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.149
+[INFO] [1735498135.001877]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498135.011803]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.086941 seconds
+[INFO] [1735498135.023437]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.785
+[INFO] [1735498135.068532]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498135.075628]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.067142 seconds
+[INFO] [1735498135.086728]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.446
+[INFO] [1735498135.135164]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498135.141712]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.066203 seconds
+[INFO] [1735498135.153116]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.353
+[INFO] [1735498135.204470]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498135.210853]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069074 seconds
+[INFO] [1735498135.228002]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.292
+[INFO] [1735498135.338542]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498135.344347]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.133575 seconds
+[INFO] [1735498135.358329]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.885
+[INFO] [1735498135.399827]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498135.417923]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.073556 seconds
+[INFO] [1735498135.431696]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.465
+[INFO] [1735498135.479530]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498135.491321]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.073365 seconds
+[INFO] [1735498135.503661]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.322
+[INFO] [1735498135.546850]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498135.553805]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.062337 seconds
+[INFO] [1735498135.566519]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.436
+[INFO] [1735498135.618575]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498135.625979]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.072379 seconds
+[INFO] [1735498135.636533]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.356
+[INFO] [1735498135.673821]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.840
+[INFO] [1735498135.687184]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.061191 seconds
+[INFO] [1735498135.703354]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.575
+[INFO] [1735498135.743583]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498135.756848]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069657 seconds
+[INFO] [1735498135.767729]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.660
+[INFO] [1735498135.814387]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498135.820668]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.063798 seconds
+[INFO] [1735498135.834881]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.855
+[INFO] [1735498135.883175]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498135.891312]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.070651 seconds
+[INFO] [1735498135.901914]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.880
+[INFO] [1735498135.950337]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498135.959787]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.068483 seconds
+[INFO] [1735498135.967921]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.903
+[INFO] [1735498136.015407]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498136.029264]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069179 seconds
+[INFO] [1735498136.042405]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.820
+[INFO] [1735498136.092882]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498136.103944]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.074942 seconds
+[INFO] [1735498136.117502]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.016
+[INFO] [1735498136.166192]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498136.179183]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.070835 seconds
+[INFO] [1735498136.185649]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.043
+[INFO] [1735498136.229409]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498136.236474]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.061756 seconds
+[INFO] [1735498136.244897]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.074
+[INFO] [1735498136.377349]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498136.384182]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.147659 seconds
+[INFO] [1735498136.392457]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.151
+[INFO] [1735498136.419646]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498136.426213]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.042089 seconds
+[INFO] [1735498136.432192]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=5.226
+[INFO] [1735498136.603030]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498136.616117]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.189880 seconds
+[INFO] [1735498136.636801]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.194
+[INFO] [1735498136.765192]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498136.771231]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.155088 seconds
+[INFO] [1735498136.778156]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-3.097
+[INFO] [1735498136.834564]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498136.851830]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.080632 seconds
+[INFO] [1735498136.861383]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=7.593
+[INFO] [1735498136.910203]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498136.917031]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.065230 seconds
+[INFO] [1735498136.925011]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-4.472
+[INFO] [1735498136.996548]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498137.002491]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.085434 seconds
+[INFO] [1735498137.015830]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.776
+[INFO] [1735498137.104417]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.840
+[INFO] [1735498137.129004]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.126443 seconds
+[INFO] [1735498137.135176]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.631
+[INFO] [1735498137.163844]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.880
+[INFO] [1735498137.185420]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.056223 seconds
+[INFO] [1735498137.195784]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.976
+[INFO] [1735498137.235774]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.880
+[INFO] [1735498137.246448]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.061276 seconds
+[INFO] [1735498137.274387]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.087
+[INFO] [1735498137.346425]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.840
+[INFO] [1735498137.357883]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.111459 seconds
+[INFO] [1735498137.379235]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.270
+[INFO] [1735498137.429799]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498137.438268]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.080321 seconds
+[INFO] [1735498137.446715]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.039
+[INFO] [1735498137.493959]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498137.503899]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.065563 seconds
+[INFO] [1735498137.510292]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.532
+[INFO] [1735498137.567795]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498137.575001]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071177 seconds
+[INFO] [1735498137.584172]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.244
+[INFO] [1735498137.638266]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498137.648052]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.073059 seconds
+[INFO] [1735498137.668046]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.961
+[INFO] [1735498137.721367]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498137.735262]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.087022 seconds
+[INFO] [1735498137.749134]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.414
+[INFO] [1735498137.813744]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498137.820346]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.085288 seconds
+[INFO] [1735498137.829185]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.029
+[INFO] [1735498137.895900]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498137.907684]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.087332 seconds
+[INFO] [1735498137.919978]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.507
+[INFO] [1735498138.001108]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.360
+[INFO] [1735498138.007554]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.099800 seconds
+[INFO] [1735498138.013340]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.349
+[INFO] [1735498138.081462]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498138.089167]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.081622 seconds
+[INFO] [1735498138.095823]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.937
+[INFO] [1735498138.141758]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.880
+[INFO] [1735498138.150066]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.060959 seconds
+[INFO] [1735498138.158372]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.468
+[INFO] [1735498138.229322]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498138.240607]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.090553 seconds
+[INFO] [1735498138.251689]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.691
+[INFO] [1735498138.281938]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.291728]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.051123 seconds
+[INFO] [1735498138.300915]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=7.268
+[INFO] [1735498138.367597]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.382450]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.090748 seconds
+[INFO] [1735498138.391582]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.669
+[INFO] [1735498138.427672]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.440101]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.057610 seconds
+[INFO] [1735498138.447174]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.691
+[INFO] [1735498138.537312]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.544124]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.104052 seconds
+[INFO] [1735498138.561050]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.731
+[INFO] [1735498138.631894]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.641446]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.097270 seconds
+[INFO] [1735498138.658405]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.769
+[INFO] [1735498138.702798]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.731113]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.089681 seconds
+[INFO] [1735498138.740102]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498138.761162]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.768145]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.037060 seconds
+[INFO] [1735498138.777084]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498138.905668]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.914256]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.146095 seconds
+[INFO] [1735498138.923836]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498138.976626]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498138.986422]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.072170 seconds
+[INFO] [1735498139.002908]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498139.053681]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498139.059180]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.072773 seconds
+[INFO] [1735498139.084308]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498139.131504]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498139.141501]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.082339 seconds
+[INFO] [1735498139.155185]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498139.201646]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498139.207627]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.066132 seconds
+[INFO] [1735498139.213398]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.847
+[INFO] [1735498139.287599]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-3.840
+[INFO] [1735498139.293348]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.085697 seconds
+[INFO] [1735498139.307796]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.989
+[INFO] [1735498139.361695]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.320
+[INFO] [1735498139.373358]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.079899 seconds
+[INFO] [1735498139.382086]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.439
+[INFO] [1735498139.525463]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.880
+[INFO] [1735498139.532547]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.159277 seconds
+[INFO] [1735498139.541419]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.461
+[INFO] [1735498139.664285]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498139.670646]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.138125 seconds
+[INFO] [1735498139.687818]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.071
+[INFO] [1735498139.746692]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498139.759900]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.089228 seconds
+[INFO] [1735498139.769298]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.082
+[INFO] [1735498139.817186]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.400
+[INFO] [1735498139.823256]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.063395 seconds
+[INFO] [1735498139.832077]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.305
+[INFO] [1735498139.902463]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498139.909103]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.085785 seconds
+[INFO] [1735498139.920108]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.030
+[INFO] [1735498139.976220]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.880
+[INFO] [1735498139.985470]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.076392 seconds
+[INFO] [1735498139.998037]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.808
+[INFO] [1735498140.049966]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498140.060036]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.074581 seconds
+[INFO] [1735498140.075619]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.114
+[INFO] [1735498140.130142]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498140.135907]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.075833 seconds
+[INFO] [1735498140.145277]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.204
+[INFO] [1735498140.197362]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-2.880
+[INFO] [1735498140.205567]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069707 seconds
+[INFO] [1735498140.213700]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=4.851
+[INFO] [1735498140.271598]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498140.280889]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.075329 seconds
+[INFO] [1735498140.292642]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.743
+[INFO] [1735498140.344833]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498140.352615]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071738 seconds
+[INFO] [1735498140.372137]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.455
+[INFO] [1735498140.391541]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498140.397628]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.045030 seconds
+[INFO] [1735498140.405311]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=13.288
+[INFO] [1735498140.441090]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498140.452344]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.054637 seconds
+[INFO] [1735498140.459233]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-7.119
+[INFO] [1735498140.513337]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498140.519994]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.067690 seconds
+[INFO] [1735498140.528790]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=3.132
+[INFO] [1735498140.578290]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498140.588094]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.068102 seconds
+[INFO] [1735498140.594001]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.376
+[INFO] [1735498140.639397]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498140.648023]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.059887 seconds
+[INFO] [1735498140.662273]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=9.470
+[INFO] [1735498140.736050]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498140.744389]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.096359 seconds
+[INFO] [1735498140.768586]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-3.467
+[INFO] [1735498140.816969]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498140.823109]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.078769 seconds
+[INFO] [1735498140.839036]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.893
+[INFO] [1735498140.859679]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498140.873238]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.050120 seconds
+[INFO] [1735498140.887415]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=8.672
+[INFO] [1735498140.927630]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498140.935771]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.062421 seconds
+[INFO] [1735498140.945209]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-5.087
+[INFO] [1735498141.012453]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.440
+[INFO] [1735498141.018506]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.082880 seconds
+[INFO] [1735498141.024598]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.373
+[INFO] [1735498141.084172]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498141.092834]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.074296 seconds
+[INFO] [1735498141.106837]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=7.203
+[INFO] [1735498141.140716]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498141.147570]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.054665 seconds
+[INFO] [1735498141.155584]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-8.226
+[INFO] [1735498141.209321]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498141.216486]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.068737 seconds
+[INFO] [1735498141.226032]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.258
+[INFO] [1735498141.276083]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498141.285977]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069543 seconds
+[INFO] [1735498141.294580]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.143
+[INFO] [1735498141.342328]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498141.349438]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.063661 seconds
+[INFO] [1735498141.370343]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.610
+[INFO] [1735498141.424778]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498141.435133]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.085685 seconds
+[INFO] [1735498141.441325]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.930
+[INFO] [1735498141.517625]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498141.527453]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.092336 seconds
+[INFO] [1735498141.534358]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.576
+[INFO] [1735498141.565855]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498141.572335]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.044879 seconds
+[INFO] [1735498141.581813]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=6.564
+[INFO] [1735498141.635527]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498141.641922]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.069614 seconds
+[INFO] [1735498141.648966]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-2.110
+[INFO] [1735498141.705712]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498141.715864]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.073882 seconds
+[INFO] [1735498141.721877]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.874
+[INFO] [1735498141.779916]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498141.787406]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071478 seconds
+[INFO] [1735498141.805974]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.315
+[INFO] [1735498141.845111]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.960
+[INFO] [1735498141.855647]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.068296 seconds
+[INFO] [1735498141.866844]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.315
+[INFO] [1735498141.920184]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498141.928467]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.072785 seconds
+[INFO] [1735498141.935961]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.235
+[INFO] [1735498141.972332]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498141.979818]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.051368 seconds
+[INFO] [1735498141.989725]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=14.110
+[INFO] [1735498142.061669]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498142.089817]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.110066 seconds
+[INFO] [1735498142.100929]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-4.033
+[INFO] [1735498142.109674]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498142.119241]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.029435 seconds
+[INFO] [1735498142.131358]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=21.345
+[INFO] [1735498142.189471]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-1.920
+[INFO] [1735498142.197094]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.077821 seconds
+[INFO] [1735498142.203463]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-3.011
+[INFO] [1735498142.271549]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498142.278277]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.081206 seconds
+[INFO] [1735498142.284804]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-2.407
+[INFO] [1735498142.332691]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.480
+[INFO] [1735498142.339778]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.061138 seconds
+[INFO] [1735498142.345747]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.137
+[INFO] [1735498142.375921]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498142.383121]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.043728 seconds
+[INFO] [1735498142.388461]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=16.266
+[INFO] [1735498142.469725]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498142.478945]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.095766 seconds
+[INFO] [1735498142.485698]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-6.140
+[INFO] [1735498142.536194]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498142.543011]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.063953 seconds
+[INFO] [1735498142.554982]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.073
+[INFO] [1735498142.607868]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.000
+[INFO] [1735498142.614419]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071525 seconds
+[INFO] [1735498142.620989]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.798
+[INFO] [1735498142.668943]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498142.674932]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.060489 seconds
+[INFO] [1735498142.696144]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.837
+[INFO] [1735498142.732136]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498142.750453]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.074139 seconds
+[INFO] [1735498142.761947]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.225
+[INFO] [1735498142.787891]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498142.794642]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.045629 seconds
+[INFO] [1735498142.801148]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=18.179
+[INFO] [1735498142.884009]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498142.895850]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.101125 seconds
+[INFO] [1735498142.904397]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-5.766
+[INFO] [1735498143.004234]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-0.480
+[INFO] [1735498143.010233]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.114468 seconds
+[INFO] [1735498143.015832]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=2.756
+[INFO] [1735498143.070844]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498143.080856]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.070593 seconds
+[INFO] [1735498143.088999]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-1.380
+[INFO] [1735498143.155120]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498143.174507]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.093454 seconds
+[INFO] [1735498143.188885]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.383
+[INFO] [1735498143.210383]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498143.217106]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.042682 seconds
+[INFO] [1735498143.225768]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=19.309
+[INFO] [1735498143.278643]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498143.285035]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.068084 seconds
+[INFO] [1735498143.291549]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-9.990
+[INFO] [1735498143.368562]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498143.375124]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.090061 seconds
+[INFO] [1735498143.383736]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.699
+[INFO] [1735498143.439406]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498143.446251]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071137 seconds
+[INFO] [1735498143.455715]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.183
+[INFO] [1735498143.521727]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498143.533085]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.086831 seconds
+[INFO] [1735498143.545673]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.983
+[INFO] [1735498143.606579]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498143.620064]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.086998 seconds
+[INFO] [1735498143.626778]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.973
+[INFO] [1735498143.669198]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498143.678751]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.058703 seconds
+[INFO] [1735498143.685219]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.966
+[INFO] [1735498143.736996]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498143.745624]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.066736 seconds
+[INFO] [1735498143.755642]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.959
+[INFO] [1735498143.807221]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498143.821092]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.075566 seconds
+[INFO] [1735498143.831488]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.773
+[INFO] [1735498143.871062]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498143.880349]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.059222 seconds
+[INFO] [1735498143.896162]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.006
+[INFO] [1735498143.941606]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498143.952016]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071703 seconds
+[INFO] [1735498143.958179]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.137
+[INFO] [1735498144.029772]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498144.037697]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.085694 seconds
+[INFO] [1735498144.044900]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.930
+[INFO] [1735498144.090450]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498144.100157]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.062397 seconds
+[INFO] [1735498144.107393]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.923
+[INFO] [1735498144.160549]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498144.166476]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.066349 seconds
+[INFO] [1735498144.175362]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.915
+[INFO] [1735498144.234167]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=0.960
+[INFO] [1735498144.240041]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.073611 seconds
+[INFO] [1735498144.251236]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.750
+[INFO] [1735498144.300008]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.920
+[INFO] [1735498144.320907]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.080616 seconds
+[INFO] [1735498144.326991]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.589
+[INFO] [1735498144.361968]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=2.400
+[INFO] [1735498144.368525]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.047825 seconds
+[INFO] [1735498144.375080]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-0.431
+[INFO] [1735498144.445754]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=2.400
+[INFO] [1735498144.452546]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.084062 seconds
+[INFO] [1735498144.467944]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.757
+[INFO] [1735498144.499376]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.517489]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.064939 seconds
+[INFO] [1735498144.526366]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=14.951
+[INFO] [1735498144.580586]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.588805]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071316 seconds
+[INFO] [1735498144.596154]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.673
+[INFO] [1735498144.629122]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.641085]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.052229 seconds
+[INFO] [1735498144.649999]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.693
+[INFO] [1735498144.677606]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.693660]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.052544 seconds
+[INFO] [1735498144.705729]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.713
+[INFO] [1735498144.729380]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.744378]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.050639 seconds
+[INFO] [1735498144.759666]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.733
+[INFO] [1735498144.780929]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.796751]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.050258 seconds
+[INFO] [1735498144.806685]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.752
+[INFO] [1735498144.824902]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.831398]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.036827 seconds
+[INFO] [1735498144.841271]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.766
+[INFO] [1735498144.871142]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.878689]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.047396 seconds
+[INFO] [1735498144.888936]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498144.919661]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498144.925597]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.046774 seconds
+[INFO] [1735498144.940085]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498144.993259]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.007656]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.082172 seconds
+[INFO] [1735498145.013916]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.041419]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.047681]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.039916 seconds
+[INFO] [1735498145.059299]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.089342]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.095646]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.048046 seconds
+[INFO] [1735498145.101718]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.163857]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.177830]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.082168 seconds
+[INFO] [1735498145.188572]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.205394]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.226172]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.048348 seconds
+[INFO] [1735498145.232714]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.277473]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.297508]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.071400 seconds
+[INFO] [1735498145.305703]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.361731]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.372516]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.074996 seconds
+[INFO] [1735498145.378807]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.401626]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.416437]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.043897 seconds
+[INFO] [1735498145.424358]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.471727]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.477700]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.061265 seconds
+[INFO] [1735498145.484772]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.564178]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.569985]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.092294 seconds
+[INFO] [1735498145.575670]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.619245]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.625230]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.054871 seconds
+[INFO] [1735498145.630986]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.704727]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.713106]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.086535 seconds
+[INFO] [1735498145.719070]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=1.776
+[INFO] [1735498145.784126]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=2.400
+[INFO] [1735498145.790297]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.078851 seconds
+[INFO] [1735498145.798347]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-10.060
+[INFO] [1735498145.854605]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=2.400
+[INFO] [1735498145.873996]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.083767 seconds
+[INFO] [1735498145.885022]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.881
+[INFO] [1735498145.914839]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498145.923513]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.049371 seconds
+[INFO] [1735498145.929892]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=19.264
+[INFO] [1735498146.031855]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.440
+[INFO] [1735498146.039971]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.116606 seconds
+[INFO] [1735498146.048304]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-5.420
+[INFO] [1735498146.095068]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=1.920
+[INFO] [1735498146.104380]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.064329 seconds
+[INFO] [1735498146.116062]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.039
+[INFO] [1735498146.140956]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=-4.800
+[INFO] [1735498146.152308]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.047996 seconds
+[INFO] [1735498146.163776]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=18.560
+^C[INFO] [1735498146.203654]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=2.400
+[INFO] [1735498146.211652]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.059297 seconds
+[INFO] [1735498146.221708]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=-13.687
+[chicinvabot/wheel_control_node-2] killing on exit
+[INFO] [1735498146.261788]: [/chicinvabot/wheel_control_node] Received shutdown request.
+[chicinvabot/line_seg_check-1] killing on exit
+[INFO] [1735498146.295209]: [/chicinvabot/wheel_control_node] Callback triggered with message: speed=0.300, steering=2.400
+[INFO] [1735498146.344908]: [/chicinvabot/wheel_control_node] Delta time between callbacks: 0.133271 seconds
+[INFO] [1735498146.357570]: [/chicinvabot/wheel_control_node] Velocities: linear=0.180, angular=0.858

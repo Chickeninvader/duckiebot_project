@@ -1,0 +1,11 @@
+<launch>
+	<arg name="node_name" value="line_seg_check"/>
+	<arg name="veh" doc="Name of vehicle. ex: megaman"/>
+
+	<group ns="$(arg veh)">
+	    <node pkg="line_seg_detector_improve" type="line_seg_detector_node.py"  name="$(arg node_name)">
+		</node>
+		<!-- output="screen" if you want to see the log of this node-->
+	</group>
+	
+</launch>
