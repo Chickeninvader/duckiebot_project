@@ -82,7 +82,7 @@ class LineSegmentCheckerNode(DTROS):
         delta_t = current_time - self.previous_time
 
         # Log or process delta time
-        # self.log(f"Delta time between callbacks: {delta_t:.6f} seconds")
+        self.log(f"Delta time between callbacks of LineSegmentCheckerNode: {delta_t:.6f} seconds")
 
         # Update the previous time
         self.previous_time = current_time
@@ -198,10 +198,10 @@ class LineSegmentCheckerNode(DTROS):
         )
 
         # Create debug visualization
-        # self.create_debug_visualization(
-        #     yellow_weight_mask,
-        #     white_weight_mask,
-        # )
+        self.create_debug_visualization(
+            yellow_weight_mask,
+            white_weight_mask,
+        )
 
         # self.log(f'distance white: {white_distance}, distance yellow: {yellow_distance}')
         # self.log(f"Steer scaled: {steer_scaled}")

@@ -36,6 +36,9 @@
     <arg name="/lane_following/lane_filter" default="false"/>
     <arg name="/lane_following/stop_line_filter" default="false"/>
     <arg name="/lane_following/lane_controller" default="false"/>
+    <!--#########################################arg for traffic_light_filter######################################-->
+    <arg name="/lane_following/traffic_light_filter" default="false"/>
+    <!--############################################################################################-->
 
     <arg name="fsm" default="false"/>
     <arg name="/fsm/logic_gate" default="false"/>
@@ -156,6 +159,64 @@
                     <arg name="veh" value="$(arg veh)" />
                 </include>
             </group>
+        </group>
+
+        <!-- Lane Filter -->
+        <group if="$(arg /lane_following/lane_filter)">
+            <remap from="lane_filter_node/segment_list" to="ground_projection_node/lineseglist_out"/>
+            <remap from="lane_filter_node/car_cmd" to="car_cmd_switch_node/cmd"/>
+            <remap from="lane_filter_node/fsm_mode" to="fsm_node/mode" />
+            <remap from="lane_filter_node/left_wheel_encoder_node/tick" to="left_wheel_encoder_node/tick"/>
+            <remap from="lane_filter_node/right_wheel_encoder_node/tick" to="right_wheel_encoder_node/tick"/>
+	        <!--<remap from="lane_filter_node/seglist_filtered" to="lane_controller_node/seglist_filtered" />-->
+            <include file="$(find lane_filter)/launch/lane_filter_node.launch">
+                <arg name="veh" value="$(arg veh)"/>
+                <arg name="param_file_name" value="$(arg param_file_name)"/>
+            </include>
+        </group>
+
+        <!-- Stop Line Filter -->
+        <group if="$(arg /lane_following/stop_line_filter)">
+            <remap from="stop_line_filter_node/lanewidth" to="lane_filter_node/lanewidth"/>
+            <remap from="stop_line_filter_node/lane_pose" to="lane_filter_node/lane_pose"/>
+<!--             <remap from="stop_line_filter_node/segment_list" to="ground_projection_node/lineseglist_out"/> -->
+            <remap from="stop_line_filter_node/segment_list" to="line_detector_node/segment_list_down"/>
+            <include file="$(find stop_line_filter)/launch/stop_line_filter_node.launch">
+                <arg name="veh" value="$(arg veh)"/>
+                <arg name="param_file_name" value="$(arg param_file_name)"/>
+            </include>
+        </group>
+
+        <!-- Traffic Light Filter -->
+        <group if="$(arg /lane_following/traffic_light_filter)">
+            <remap from="traffic_light_filter_node/lane_pose" to="lane_filter_node/lane_pose"/>
+            <remap from="traffic_light_filter_node/segment_list_top" to="line_detector_node/segment_list_top"/>
+            <include file="$(find traffic_light_filter)/launch/traffic_light_filter_node.launch">
+                <arg name="veh" value="$(arg veh)"/>
+                <arg name="param_file_name" value="$(arg param_file_name)"/>
+            </include>
+        </group>
+
+        <!-- Lane controller -->
+        <group if="$(arg /lane_following/lane_controller)">
+            <remap from="lane_controller_node/lane_pose" to="lane_filter_node/lane_pose"/>
+            <remap from="lane_controller_node/wheels_cmd" to="wheels_driver_node/wheels_cmd" />
+            <remap from="lane_controller_node/fsm_mode" to="fsm_node/mode" />
+            <remap from="lane_controller_node/obstacle_distance_reading" to="road_anomaly_watcher/obstacle_distance"/>
+            <!-- <remap from="lane_controller_node/obstacle_avoidance_pose" to="obst_avoid/obstacle_avoidance_pose" /> -->
+            <!-- <remap from="lane_controller_node/obstacle_detected" to="obstacle_avoidance_node/obstacle_avoidance_active_flag" /> -->
+            <remap from="lane_controller_node/stop_line_reading" to="stop_line_filter_node/stop_line_reading" />
+            <!--#############################map the traffic_light detection###################################-->
+            <remap from="lane_controller_node/traffic_light_reading" to="traffic_light_filter_node/traffic_light_reading" />
+            <!--###############################################################################################-->
+            <!--#############################map the obstacle object detection###################################-->
+<!--             <remap from="lane_controller_node/detection_list" to="agent/object_detection_node/detection_list" /> -->
+            <!--###############################################################################################-->
+            <remap from="wheels_driver_node/radius_limit" to="lane_controller_node/radius_limit" />
+            <include file="$(find lane_control)/launch/lane_controller_node.launch">
+                <arg name="veh" value="$(arg veh)"/>
+                <arg name="param_file_name" value="$(arg param_file_name)"/>
+            </include>
         </group>
 
         <!-- Visualization -->

@@ -17,7 +17,7 @@ epsilon = 3
 prior_mean = 6.0  # Expected slope
 prior_std = 0.7   # Uncertainty in slope
 lower_bound_y = 0
-upper_bound_y = 40
+upper_bound_y = 35
 
 def rescale( a, L, U):
         if np.allclose(L, U):
@@ -293,8 +293,8 @@ def calculate_lane_error(trajectory, yellow_points, white_points, start_idx):
         dist_yellow_cumulate += dist_yellow
         dist_white_cumulate += dist_white
         
-    # Calculate error based on all available points
-    total_error += abs(dist_yellow_cumulate - dist_white_cumulate)
+    # Calculate error based on all available points. TODO: this is a hard code as we observe the car mainly stay close to yellow
+    total_error += abs(dist_yellow_cumulate - dist_white_cumulate * 1.2)
     # If neither point exists, don't add to error (could also add a penalty here)
     
     return total_error, valid_trajectory, shortest_distance_points, dist_yellow_cumulate, dist_white_cumulate

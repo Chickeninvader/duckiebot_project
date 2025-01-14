@@ -1,5 +1,5 @@
 # parameters
-ARG REPO_NAME="my-ros-project"
+ARG REPO_NAME="my-ros-project-debug"
 ARG DESCRIPTION="My first DTProject for Duckietown"
 ARG MAINTAINER="Albert Vo (ngocbach@asu.edu)"
 # pick an icon from: https://fontawesome.com/v4.7.0/icons/
@@ -10,7 +10,7 @@ ARG ICON="cube"
 ARG ARCH
 ARG DISTRO=daffy
 ARG DOCKER_REGISTRY=docker.io
-ARG BASE_IMAGE=dt-core
+ARG BASE_IMAGE=dt-ros-commons
 ARG BASE_TAG=${DISTRO}-${ARCH}
 ARG LAUNCHER=default
 

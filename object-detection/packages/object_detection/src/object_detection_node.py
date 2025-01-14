@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import cv2
 import numpy as np
+import copy
 import os
 import rospy
 from duckietown.dtros import DTROS, NodeType, TopicType
@@ -24,7 +25,7 @@ class ObjectDetectionNode(DTROS):
         self.pub_detections_box_image = rospy.Publisher("~box_image/compressed", CompressedImage, queue_size=1, dt_topic_type=TopicType.DEBUG)
         
         self.pub_detections_list = rospy.Publisher(
-            f"/{self.veh}/detection_list",
+            f"/{self.veh}/lane_controller_node/detection_list",
             ObstacleImageDetectionList,
             queue_size=1,
             dt_topic_type=TopicType.DEBUG,
@@ -41,7 +42,7 @@ class ObjectDetectionNode(DTROS):
 
         self.bridge = CvBridge()
         aido_eval = rospy.get_param("~AIDO_eval", False)
-        self._debug = rospy.get_param("~debug", False)
+        self._debug = rospy.get_param("~debug", True)
         
         self.log("Starting model loading!")
         self.model_wrapper = Wrapper(aido_eval)
@@ -73,8 +74,9 @@ class ObjectDetectionNode(DTROS):
         # Publish detection results
         self.publish_detections(bboxes, classes, scores, image_msg, rgb)
         
-        if self._debug:
-            self.visualize_detections(rgb, bboxes, classes)
+        # if self._debug:
+        #     self.visualize_detections(rgb, bboxes, classes)
+        self.visualize_detections(rgb, bboxes, classes)
 
     def get_traffic_light_hsi(self, bbox, rgb):
         """
@@ -95,12 +97,12 @@ class ObjectDetectionNode(DTROS):
             x2 = max(0, min(x2, width-1))
             
             # Extract the region
-            roi = rgb[y1:y2, x1:x2]
+            roi = copy.deepcopy(rgb[y1:y2, x1:x2])
 
             # Convert RGB to BGR before publishing
             roi_bgr = roi[..., ::-1]
-            obj_det_img = self.bridge.cv2_to_compressed_imgmsg(roi_bgr)
-            self.pub_detections_box_image.publish(obj_det_img)
+            obj_det_img_box = self.bridge.cv2_to_compressed_imgmsg(roi_bgr)
+            self.pub_detections_box_image.publish(obj_det_img_box)
             
             # Convert ROI to HSV color space
             hsv_roi = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
@@ -144,21 +146,46 @@ class ObjectDetectionNode(DTROS):
 
         names = {0: "duckie", 1: "duckiebot", 2: "intersection_sign", 3: "traffic_light", 4: "stop_sign"}
 
+        #################################################################
+        # add a empty object, as placeholder
+        detection = ObstacleImageDetection()
+        detection.bounding_box = Rect(
+            x=0,
+            y=0,
+            w=0,
+            h=0
+        )
+        detection.type.type = 200
+        detection_list_msg.list.append(detection)
+        #################################################################
+
+        ###########################
+        idx = 0
+        ###########################
+
         for bbox, cls, score in zip(bboxes, classes, scores):
             cls = int(cls)
             if not isinstance(cls, int) or not 0 <= cls <= 4:
                 continue
                 
-            if (cls in [0, 1] and score <= 0.5) or (cls not in [0, 1] and score <= 0.5):
+            if (cls in [0, 1] and score <= 0.5) or (cls not in [0, 1] and score <= 0.15):
                 continue
 
             # Traffic Light Processing
-            if cls == 3:
+            if cls == 3 and score >= 0.5:
                 hue, saturation, intensity = self.get_traffic_light_hsi(bbox, rgb)
+
+                ####################################
+                self.log("\n********************************\n" +
+                         f"score: {score}\n" +
+                         f"hue: {hue:.1f}\n" +
+                         "\n************************************\n", "error")
+                ######################################
                 
                 RED_HUE_RANGE_1 = (0, 30)
+                # RED_HUE_RANGE_2 = (160, 180)
                 RED_HUE_RANGE_2 = (330, 360)
-                GREEN_HUE_RANGE = (45, 90)
+                GREEN_HUE_RANGE = (40, 100)
                 
                 if ((RED_HUE_RANGE_1[0] <= hue <= RED_HUE_RANGE_1[1] or 
                      RED_HUE_RANGE_2[0] <= hue <= RED_HUE_RANGE_2[1])):
@@ -167,6 +194,21 @@ class ObjectDetectionNode(DTROS):
                 elif GREEN_HUE_RANGE[0] <= hue <= GREEN_HUE_RANGE[1]:
                     cls = 31  # Green light
                     self.log(f"detect green traffic light!")
+
+            ###################################################################
+            # Duckiebot Processing
+            elif cls == 1 and score >= 0.5:
+                yy1, yy2 = int(bbox[1]), int(bbox[3])
+                xx1, xx2 = int(bbox[0]), int(bbox[2])
+                duckitbot_area = (xx2 - xx1) * (yy2 - yy1)
+                cls = 11 # confident duckiebot detected
+                self.log("\n************************************\n" + 
+                         f"detect duckiebot and confident\n" +
+                         f"score: {score}\n" +
+                         f"duckitbot area: {duckitbot_area}" +
+                         "\n************************************\n", "error")
+            ###################################################################
+
 
             else:
                 self.log(f"detect {names[cls]}")
@@ -181,13 +223,18 @@ class ObjectDetectionNode(DTROS):
             detection.type.type = int(cls)
             detection_list_msg.list.append(detection)
 
+            ##############################################
+            classes[idx] = int(cls)
+            idx += 1
+            ##############################################
+
         self.pub_detections_list.publish(detection_list_msg)
 
     def visualize_detections(self, rgb, bboxes, classes):
         colors = {0: (0, 255, 255), 1: (0, 165, 255), 2: (0, 250, 0), 
-                 3: (0, 0, 255), 4: (255, 0, 0)}
+                 3: (0, 0, 255), 4: (255, 0, 0), 11: (0, 165, 255), 30: (0, 0, 255), 31: (0, 250, 0)}
         names = {0: "duckie", 1: "duckiebot", 2: "intersection_sign", 
-                3: "traffic_light", 4: "stop_sign"}
+                3: "traffic_light", 4: "stop_sign", 11: "duckiebot", 30: "red_light", 31: "green_light" }
         font = cv2.FONT_HERSHEY_SIMPLEX
         
         for clas, box in zip(classes, bboxes):
