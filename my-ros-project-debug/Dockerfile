@@ -10,7 +10,7 @@ ARG ICON="cube"
 ARG ARCH
 ARG DISTRO=daffy
 ARG DOCKER_REGISTRY=docker.io
-ARG BASE_IMAGE=dt-ros-commons
+ARG BASE_IMAGE=dt-core
 ARG BASE_TAG=${DISTRO}-${ARCH}
 ARG LAUNCHER=default
 
@@ -60,15 +60,26 @@ ENV PIP_INDEX_URL=${PIP_INDEX_URL}
 COPY ./dependencies-py3.* "${REPO_PATH}/"
 RUN dt-pip3-install "${REPO_PATH}/dependencies-py3.*"
 
-# copy the source code
+# # copy the source code
+# COPY ./packages "${REPO_PATH}/packages"
+# replace the source code
+RUN rm -rf "${REPO_PATH}/../dt-core" 
 COPY ./packages "${REPO_PATH}/packages"
 
+# Clean build and devel spaces
+RUN rm -rf ${CATKIN_WS_DIR}/build ${CATKIN_WS_DIR}/devel
 # build packages
 RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
   catkin build \
     --workspace ${CATKIN_WS_DIR}/
 
-# install launcher scripts
+# # install launcher scripts
+# COPY ./launchers/. "${LAUNCH_PATH}/"
+# RUN dt-install-launchers "${LAUNCH_PATH}"
+
+# replace the launcher scripts
+RUN rm -rf "${LAUNCH_PATH}" && \
+    mkdir -p "${LAUNCH_PATH}"
 COPY ./launchers/. "${LAUNCH_PATH}/"
 RUN dt-install-launchers "${LAUNCH_PATH}"
 
