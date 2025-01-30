@@ -1,0 +1,31 @@
+events:
+  at_stop_line:
+    topic: "stop_line_filter_node/at_stop_line"
+    msg_type: "BoolStamped"
+    trigger: True
+  joystick_override_on:
+    topic: "joy_mapper_node/joystick_override"
+    msg_type: "BoolStamped"
+    trigger: True
+  intersection_go_explicit:
+    topic: "coordinator_node/intersection_go"
+    msg_type: "BoolStamped"
+    trigger: True
+  joystick_override_off:
+    topic: "joy_mapper_node/joystick_override"
+    msg_type: "BoolStamped"
+    trigger: False
+
+  intersection_done:  ## closed loop new
+    topic: "intersection_navigation_node/intersection_done"
+    msg_type: "BoolStamped"
+    trigger: True
+
+
+gates:
+  intersection_go:
+    gate_type: OR
+    inputs:
+      - intersection_go_implicit
+      - intersection_go_explicit
+    output_topic: "~intersection_go"

@@ -10,7 +10,6 @@ from duckietown_msgs.msg import (
     BoolStamped,
     FSMState,
     StopLineReading,
-    ObstacleImageDetectionList
 )
 
 from lane_controller.controller import LaneController
@@ -66,12 +65,10 @@ class LaneControllerNode(DTROS):
         self.params["~k_Iphi"] = DTParam(
             "~k_Iphi", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0
         )
-        # self.params["~theta_thres"] = rospy.get_param("~theta_thres", None)
-        # Breaking up the self.params["~theta_thres"] parameter for more finer tuning of phi
-        self.params["~theta_thres_min"] = DTParam("~theta_thres_min", param_type=ParamType.FLOAT, min_value=-100.0,
-                                                  max_value=100.0)  # SUGGESTION mandatorizing the use of DTParam inplace of rospy.get_param for parameters in the entire dt-core repository as it allows active tuning while Robot is in action.
-        self.params["~theta_thres_max"] = DTParam("~theta_thres_max", param_type=ParamType.FLOAT, min_value=-100.0,
-                                                  max_value=100.0)
+        #self.params["~theta_thres"] = rospy.get_param("~theta_thres", None)
+        #Breaking up the self.params["~theta_thres"] parameter for more finer tuning of phi
+        self.params["~theta_thres_min"] = DTParam("~theta_thres_min", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0)  #SUGGESTION mandatorizing the use of DTParam inplace of rospy.get_param for parameters in the entire dt-core repository as it allows active tuning while Robot is in action.
+        self.params["~theta_thres_max"] = DTParam("~theta_thres_max", param_type=ParamType.FLOAT, min_value=-100.0, max_value=100.0) 
         self.params["~d_thres"] = rospy.get_param("~d_thres", None)
         self.params["~d_offset"] = rospy.get_param("~d_offset", None)
         self.params["~integral_bounds"] = rospy.get_param("~integral_bounds", None)
@@ -99,19 +96,6 @@ class LaneControllerNode(DTROS):
         self.obstacle_stop_line_detected = False
         self.at_obstacle_stop_line = False
 
-        #########################################
-        # whether the red light is detected in the top image
-        # self.red_light_detected_top = False
-        self._is_stop_sign = False
-        self._is_red_light_od = False
-
-        self._is_new_stop_sign = True
-        self._is_close_car = False
-        self._close_car_threshold = 10000
-        self.car_area_list = np.array([100., 100.])
-        self.stop_start_time = 0
-        #########################################
-
         self.current_pose_source = "lane_filter"
 
         # Construct publishers
@@ -136,72 +120,12 @@ class LaneControllerNode(DTROS):
         self.sub_stop_line = rospy.Subscriber(
             "~stop_line_reading", StopLineReading, self.cbStopLineReading, queue_size=1
         )
-
-        ################################################################
-        # self.sub_traffic_light = rospy.Subscriber(
-        #     "~traffic_light_reading", StopLineReading, self.cbTrafficLightReading, queue_size=1
-        # )
-
-        self.sub_object_detection = rospy.Subscriber(
-            "~detection_list", ObstacleImageDetectionList, self.cbObjectDetection, queue_size=1
-        )
-
-        # self.pub_detections_list = rospy.Publisher(
-        #     f"/{self.veh}/detection_list",
-        #     ObstacleImageDetectionList,
-        #     queue_size=1,
-        #     dt_topic_type=TopicType.DEBUG,
-        # )
-        ################################################################
-
         self.sub_obstacle_stop_line = rospy.Subscriber(
             "~obstacle_distance_reading", StopLineReading, self.cbObstacleStopLineReading, queue_size=1
         )
+        self.sub_fsm_mode = rospy.Subscriber("~fsm_mode", FSMState, self.cbMode, queue_size=1)
 
         self.log("Initialized!")
-
-    ###########################################################
-    def cbObjectDetection(self, msg):
-        self._is_stop_sign = False
-        # self.log("\n#############################################\n" +
-        #     "type of obstacle: " + msg +
-        #          "\n#############################################\n", "error")
-        _is_car_detected = False
-        duckiebot_area = 100.0
-        if msg.list is not None:
-            for obj in msg.list:
-                # self.log("\n#############################################\n" +
-                #     "type of obstacle: " + str(obj.type.type) +
-                #          "\n#############################################\n", "error")
-                if obj.type.type == 4:
-                    self._is_stop_sign = True
-                ###############################################################
-                if obj.type.type == 30:
-                    self._is_red_light_od = True
-                if obj.type.type == 31:
-                    self._is_red_light_od = False
-                if obj.type.type == 11:
-                    # is_car_detected = True
-                    duckiebot_area = obj.bounding_box.h * obj.bounding_box.w
-                    # self.car_area_list[0:-1] = self.car_area_list[1:]
-                    # self.car_area_list[-1] = duckiebot_area
-
-        # if not is_car_detected: # no bot, nothing is detected ahead
-        #     self.car_area_list[0:-1] = self.car_area_list[1:]
-        #     self.car_area_list[-1] = 100.0
-
-        self.car_area_list[0:-1] = self.car_area_list[1:]
-        self.car_area_list[-1] = duckiebot_area
-
-        max_car_area = np.max(self.car_area_list)
-        self.log("max_car_area: " + str(max_car_area), "error")
-        if max_car_area >= self._close_car_threshold:
-            self._is_close_car = True
-        elif max_car_area < self._close_car_threshold * 1.05:
-            self._is_close_car = False
-                ###############################################################
-
-    ###########################################################
 
     def cbObstacleStopLineReading(self, msg):
         """
@@ -210,9 +134,9 @@ class LaneControllerNode(DTROS):
         Args:
             msg(:obj:`StopLineReading`): Message containing information about the virtual obstacle stopline.
         """
-        # self.obstacle_stop_line_distance = np.sqrt(msg.stop_line_point.x ** 2 + msg.stop_line_point.y ** 2)
-        # self.obstacle_stop_line_detected = msg.stop_line_detected
-        self.at_obstacle_stop_line = msg.at_stop_line
+        self.obstacle_stop_line_distance = np.sqrt(msg.stop_line_point.x**2 + msg.stop_line_point.y**2)
+        self.obstacle_stop_line_detected = msg.stop_line_detected
+        self.at_stop_line = msg.at_stop_line
 
     def cbStopLineReading(self, msg):
         """Callback storing current distance to the next stopline, if one is detected.
@@ -220,17 +144,9 @@ class LaneControllerNode(DTROS):
         Args:
             msg (:obj:`StopLineReading`): Message containing information about the next stop line.
         """
-        # self.stop_line_distance = np.sqrt(msg.stop_line_point.x ** 2 + msg.stop_line_point.y ** 2)
-        # self.stop_line_detected = msg.stop_line_detected
-        self.at_stop_line = msg.at_stop_line
-
-    # def cbTrafficLightReading(self, msg):
-    #     """Callback storing current distance to the next stopline, if one is detected.
-    #
-    #     Args:
-    #         msg (:obj:`StopLineReading`): Message containing information about the next traffic light.
-    #     """
-    #     self.red_light_detected_top = msg.stop_line_detected
+        self.stop_line_distance = np.sqrt(msg.stop_line_point.x**2 + msg.stop_line_point.y**2)
+        self.stop_line_detected = msg.stop_line_detected
+        self.at_obstacle_stop_line = msg.at_stop_line
 
     def cbMode(self, fsm_state_msg):
 
@@ -290,49 +206,28 @@ class LaneControllerNode(DTROS):
         if self.last_s is not None:
             dt = current_s - self.last_s
 
-        ################################################################
-        # self.log("\n***********************************************************8\n" + \
-        #          "is at stop line: " + str(self.at_stop_line) + \
-        #          "\nis red light detected in the top image: " + str(self._is_red_light_od) + \
-        #          "\n_is_close_car: " + str(self._is_close_car) + \
-        #          # "\ntest: " + str((self.at_stop_line and self.red_light_detected_top) or self.at_obstacle_stop_line) + \
-        #          "\n_is_new_stop_sign: " + str(self._is_new_stop_sign) + \
-        #          "\n***********************************************************8\n", "error")
-        ##################################################################
+        if self.current_pose_source == 'intersection_navigation':
+            self.log(f" at stop line {self.at_stop_line}, at obstracle {self.at_obstacle_stop_line}")
 
-        ####################################################################
-        if self.at_stop_line and self._is_stop_sign and self._is_new_stop_sign:
+        if (self.at_stop_line or self.at_obstacle_stop_line) and (self.current_pose_source == 'lane_filter'):
             v = 0
             omega = 0
-        ####################################################################
-
-        # if (self.at_stop_line and self.red_light_detected_top) or self.at_obstacle_stop_line or (
-        elif (self.at_stop_line and self._is_red_light_od) or self.at_obstacle_stop_line or self._is_close_car:
-            ###############################
-            # self.log("\n###############################################\n", "error")
-            # self.log("self.at_stop_line in lane_controller_node: " + self.at_stop_line, "error")
-            # self.log("\n###############################################\n", "error")
-            ###############################
-            v = 0
-            omega = 0
-
-        else:
+            
+        elif self.current_pose_source == 'lane_filter':
+        # else:
+            
             # Compute errors
             d_err = pose_msg.d - self.params["~d_offset"]
             phi_err = pose_msg.phi
 
             # We cap the error if it grows too large
             if np.abs(d_err) > self.params["~d_thres"]:
-                # self.log("d_err too large, thresholding it!", "error")
+                self.log("d_err too large, thresholding it!", "error")
                 d_err = np.sign(d_err) * self.params["~d_thres"]
-
+            
             if phi_err > self.params["~theta_thres_max"].value or phi_err < self.params["~theta_thres_min"].value:
-                ####################
-                # self.log("phi_err too large/small, thresholding it!" + str(phi_err), "error")
-                ####################
-                # self.log("phi_err too large/small, thresholding it! phi_err = " + str(phi_err) + " max = " + str(self.params["~theta_thres_max"].value) + " min = " + str(self.params["~theta_thres_min"].value), "error")
-                phi_err = np.maximum(self.params["~theta_thres_min"].value,
-                                     np.minimum(phi_err, self.params["~theta_thres_max"].value))
+                self.log("phi_err too large/small, thresholding it!", "error")
+                phi_err = np.maximum(self.params["~theta_thres_min"].value, np.minimum(phi_err, self.params["~theta_thres_max"].value))
 
             wheels_cmd_exec = [self.wheels_cmd_executed.vel_left, self.wheels_cmd_executed.vel_right]
             if self.obstacle_stop_line_detected:
@@ -351,30 +246,24 @@ class LaneControllerNode(DTROS):
             # For feedforward action (i.e. during intersection navigation)
             omega += self.params["~omega_ff"]
 
+        elif self.current_pose_source == 'intersection_navigation':
+            # Fix velocify, get the orientation error from the pose msg
+            v = pose_msg.v_ref
+            omega = -pose_msg.phi
+
+        if self.current_pose_source == 'intersection_navigation':
+            self.log(f" velocity {v}, orientation {omega}", 'warn')
+
+
         # Initialize car control msg, add header from input message
         car_control_msg = Twist2DStamped()
         car_control_msg.header = pose_msg.header
 
         # Add commands to car message
-        #########################################
-        # if self.at_stop_line or self.at_obstacle_stop_line:
-        #     self.log("v: " + str(v), "error")
-        #     self.log("omega: " + str(omega), "error")
-        #########################################
         car_control_msg.v = v
         car_control_msg.omega = omega
 
         self.publishCmd(car_control_msg)
-
-        ##############################################
-        if self.at_stop_line and self._is_stop_sign and self._is_new_stop_sign:
-            rospy.sleep(3)
-            self._is_new_stop_sign = False
-
-        if not self.at_stop_line:
-            self._is_new_stop_sign = True
-        ##############################################
-
         self.last_s = current_s
 
     def cbParametersChanged(self):

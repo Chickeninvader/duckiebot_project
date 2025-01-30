@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import copy
+from collections import deque
+from collections import defaultdict
 
 import rospy
 from duckietown_msgs.msg import BoolStamped, FSMState
@@ -45,13 +47,13 @@ class FSMNode:
         #     self.pub_dict[node_name] = rospy.Publisher(topic_name, BoolStamped, queue_size=1, latch=True)
 
         for node_name, service_name in list(nodes.items()):
-            rospy.loginfo(f"FSM waiting for service {service_name}")
+            rospy.loginfo(f"FSM has {node_name} waiting for service {service_name}")
             try:
                 rospy.wait_for_service(
-                    service_name, timeout=10.0
+                    service_name, timeout=5.0
                 )  #  Not sure if there is a better way to do this
                 self.srv_dict[node_name] = rospy.ServiceProxy(service_name, SetBool)
-                rospy.loginfo(f"FSM found service {service_name}")
+                rospy.loginfo(f"FSM found service {service_name}self.event_last_trigger_time")
             except rospy.ROSException as e:
                 rospy.logwarn(f"{e}")
 
@@ -61,6 +63,10 @@ class FSMNode:
         # print self.pub_dict
         # Process events definition
         param_events_dict = rospy.get_param("~events", {})
+
+        #  make cbEvent more stable
+        self.count_event = defaultdict(int)
+
         # Validate events definition
         if not self._validateEvents(param_events_dict):
             rospy.signal_shutdown(f"[{self.node_name}] Invalid event definition.")
@@ -205,17 +211,25 @@ class FSMNode:
         if lights is not None:
             msg = String()
             msg.data = lights
-            self.changePattern(msg)
-
+            rospy.loginfo(f"{lights} is use")
+            # self.changePattern(msg)
+            
     def cbEvent(self, msg, event_name):
         if msg.data == self.event_trigger_dict[event_name]:
             # Update timestamp
             self.state_msg.header.stamp = msg.header.stamp
             next_state = self._getNextState(self.state_msg.state, event_name)
+            rospy.logwarn(f"current state {self.state_msg.state}, event name {event_name}, next_state = {next_state}, count: {self.count_event}")
+            
             if next_state is not None:
-                # Has a defined transition
-                self.state_msg.state = next_state
-                self.publish()
+                self.count_event[next_state] += 1
+                if self.count_event[next_state] >= 5:
+                    # Has a defined transition
+                    self.state_msg.state = next_state
+                    self.publish()
+                    self.count_event = defaultdict(int)
+
+
 
     def on_shutdown(self):
         rospy.loginfo(f"[{self.node_name}] Shutting down.")

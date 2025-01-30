@@ -3,17 +3,21 @@ top_cutoff: 40
 
 colors:
   RED:
-    low_1: [0,140,100]
+    low_1: [0,100,100]
     high_1: [15,255,255]
-    low_2: [165,140,100]
+    low_2: [165,100,100]
     high_2: [180,255,255]
   WHITE:
-    low: [0,0,150]
-    high: [180,100,255]
+    low_1: [0,0,130]
+    high_1: [15,80,255]
+    low_2: [45,0,130]
+    high_2: [180,80,255]
+    low_3: [15,0,80] #[20,50,80] # old value [25,140,100]
+    high_3: [45,30,255]
   YELLOW:
-    low: [14,100,80] #Old Value [25, 140, 100]
-    high: [35,255,255] #Old Value [45, 255, 255] #Should fix the green regions being detected as yellow
-
+    low: [15,30,80] #[20,50,80] # old value [25,140,100]
+    high: [45,255,255]
+    
 line_detector_parameters:
   canny_thresholds: [80,200]
   canny_aperture_size: 3

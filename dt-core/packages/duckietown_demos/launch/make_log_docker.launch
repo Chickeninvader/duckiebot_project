@@ -1,10 +1,32 @@
 <?xml version="1.0"?>
 
 <launch>
-  <arg name="veh"/>
-  <arg name="include" default="(/$(arg veh)/camera_node/camera_info|/$(arg veh)/joy|/$(arg veh)/camera_node/image/compressed|/$(arg veh)/wheels_driver_node/wheels_cmd|/$(arg veh)/fsm_node/mode|/$(arg veh)/car_cmd_switch_node/cmd|/$(arg veh)/velocity_to_pose_node/pose|/$(arg veh)/light_sensor_node/sensor_data)"/>
-  <arg name="out_path" default="/data/logs"/>
+  <!-- Define the vehicle name as an argument -->
+  <arg name="veh" />
 
-  <node pkg="rosbag" type="record" name="rosbag_record" args="-e $(arg include) -o $(arg out_path)/$(arg veh)"/>
+  <!-- List of topics to include in rosbag recording -->
+  <arg name="include" default="
+    /$(arg veh)/camera_node/camera_info
+    /$(arg veh)/joy
+    /$(arg veh)/camera_node/image/compressed
+    /$(arg veh)/wheels_driver_node/wheels_cmd
+    /$(arg veh)/wheels_driver_node/wheels_cmd_executed
+    /$(arg veh)/fsm_node/mode
+    /$(arg veh)/car_cmd_switch_node/cmd
+    /$(arg veh)/velocity_to_pose_node/pose
+    /$(arg veh)/detection_list
+    /$(arg veh)/ground_projection_node/lineseglist_out
+    /$(arg veh)/lane_filter_node/lane_pose
+  "/>
 
+  <!-- Specify the output path for rosbag logs -->
+  <arg name="out_path" default="/data/logs" />
+
+  <!-- Rosbag record node configuration -->
+  <node
+    pkg="rosbag"
+    type="record"
+    name="rosbag_record"
+    args="-e $(arg include) -o $(arg out_path)/$(arg veh)"
+  />
 </launch>

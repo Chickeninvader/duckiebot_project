@@ -9,7 +9,7 @@
     <!-- Run detector node -->
     <group ns="$(arg veh)">
 
-        <node  pkg="$(arg pkg_name)" type="$(arg node_name).py" name="$(arg node_name)" output="screen" required="true">
+        <node  pkg="$(arg pkg_name)" type="$(arg node_name).py" name="$(arg node_name)" required="true">
 		    <rosparam command="load" file="$(find duckietown_protocols)/config/LED_protocol.yaml"/>
 		    <rosparam command="load" file="$(find led_detection)/config/led_detector_node/$(arg param_file_name).yaml"/>
 			<param name="verbose" value="$(arg verbose)"/>
