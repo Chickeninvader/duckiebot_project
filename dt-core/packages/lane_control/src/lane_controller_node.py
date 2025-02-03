@@ -206,8 +206,8 @@ class LaneControllerNode(DTROS):
         if self.last_s is not None:
             dt = current_s - self.last_s
 
-        if self.current_pose_source == 'intersection_navigation':
-            self.log(f" at stop line {self.at_stop_line}, at obstracle {self.at_obstacle_stop_line}")
+        # if self.current_pose_source == 'intersection_navigation':
+        #     self.log(f" at stop line {self.at_stop_line}, at obstracle {self.at_obstacle_stop_line}")
 
         if (self.at_stop_line or self.at_obstacle_stop_line) and (self.current_pose_source == 'lane_filter'):
             v = 0
@@ -218,6 +218,7 @@ class LaneControllerNode(DTROS):
             
             # Compute errors
             d_err = pose_msg.d - self.params["~d_offset"]
+            # self.log(f"pose d: {pose_msg.d}, origin offset: {self.params['~d_offset']}, d_err: {d_err}")
             phi_err = pose_msg.phi
 
             # We cap the error if it grows too large
@@ -251,8 +252,8 @@ class LaneControllerNode(DTROS):
             v = pose_msg.v_ref
             omega = -pose_msg.phi
 
-        if self.current_pose_source == 'intersection_navigation':
-            self.log(f" velocity {v}, orientation {omega}", 'warn')
+        # if self.current_pose_source == 'intersection_navigation':
+        #     self.log(f" velocity {v}, orientation {omega}", 'warn')
 
 
         # Initialize car control msg, add header from input message

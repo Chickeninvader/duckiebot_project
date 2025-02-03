@@ -219,11 +219,10 @@ class FSMNode:
             # Update timestamp
             self.state_msg.header.stamp = msg.header.stamp
             next_state = self._getNextState(self.state_msg.state, event_name)
-            rospy.logwarn(f"current state {self.state_msg.state}, event name {event_name}, next_state = {next_state}, count: {self.count_event}")
-            
             if next_state is not None:
+                rospy.logwarn(f"current state {self.state_msg.state}, event name {event_name}, next_state = {next_state}, count: {self.count_event}")
                 self.count_event[next_state] += 1
-                if self.count_event[next_state] >= 5:
+                if self.count_event[next_state] >= 4:
                     # Has a defined transition
                     self.state_msg.state = next_state
                     self.publish()

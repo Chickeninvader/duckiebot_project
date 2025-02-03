@@ -86,7 +86,7 @@ class UnicornIntersectionNode:
 
         tag_id = self.tag_id
         # turn_type = self.turn_type
-        turn_type = 0
+        turn_type = rand.rand(2)
         self.turn_type = 0
 
         sleeptimes = [self.time_left_turn, self.time_straight_turn, self.time_right_turn]

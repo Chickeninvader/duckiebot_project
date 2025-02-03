@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Define arguments -->
+  <arg name="veh"/>
+  <arg name="bag_file"/>
+
+  <!-- Play the bag file -->
+  <node pkg="rosbag" type="play" name="rosbag_play" required="true" output="screen" args="$(arg bag_file)"/>
+
+  <!-- Decompress the compressed images and remap them to a raw image topic -->
+  <node pkg="image_transport" type="republish" name="decompress_images" args="compressed in:=$(arg veh)/camera_node/image/compressed raw out:=/camera_out/image"/>
+  
+  <!-- Extract images from the raw image topic -->
+  <node name="extract" pkg="image_view" type="extract_images" respawn="false" required="true" output="screen">
+    <remap from="image" to="/camera_out/image"/>
+  </node>
+</launch>

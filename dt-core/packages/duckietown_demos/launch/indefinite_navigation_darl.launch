@@ -36,7 +36,7 @@
         <arg name="vehicle_avoidance" value="true"/>
         <arg name="/vehicle_avoidance/detection" value="true" />
         <arg name="/vehicle_avoidance/filter" value="true" />
-        <arg name="/vehicle_avoidance/control" value="true"/>
+        <!-- <arg name="/vehicle_avoidance/control" value="true"/> -->
                 
 		<!-- Intersection arguments -->
 		<arg name="unicorn_intersection" value="true"/>

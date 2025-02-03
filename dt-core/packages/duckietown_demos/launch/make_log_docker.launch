@@ -14,7 +14,6 @@
     /$(arg veh)/fsm_node/mode
     /$(arg veh)/car_cmd_switch_node/cmd
     /$(arg veh)/velocity_to_pose_node/pose
-    /$(arg veh)/detection_list
     /$(arg veh)/ground_projection_node/lineseglist_out
     /$(arg veh)/lane_filter_node/lane_pose
   "/>

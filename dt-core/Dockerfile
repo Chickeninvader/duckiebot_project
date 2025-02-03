@@ -100,3 +100,5 @@ ENV DUCKIETOWN_DATA="/tmp/duckietown-data"
 RUN echo 'config echo 1' > .compmake.rc
 
 COPY scripts/send-fsm-state.sh /usr/local/bin
+# ENV ROS_MASTER_URI="http://trafficlight010.local:11311"
+# RUN apt-get update && apt-get install -y ros-${ROS_DISTRO}-image-view
