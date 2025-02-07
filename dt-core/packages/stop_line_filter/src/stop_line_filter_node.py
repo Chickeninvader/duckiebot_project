@@ -50,7 +50,7 @@ class StopLineFilterNode(DTROS):
         self.lane_pose = lane_pose_msg
     
     def cb_segments(self, segment_list_msg):
-        if self.sleep:
+        if self.sleep and self.state != "LANE_FOLLOWING":
             return
 
         red_segments = [
