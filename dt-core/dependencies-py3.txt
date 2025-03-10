@@ -8,3 +8,5 @@ ros-node-utils==2.0.0
 
 # constraints: >= 6.0.9
 compmake-z6==6.1.5
+
+# robomimic, in case of having enough memory
