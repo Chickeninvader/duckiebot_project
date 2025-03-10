@@ -8,115 +8,108 @@ import datetime
 from cv_bridge import CvBridge
 from collections import deque
 
-# Define input folder containing ROS bag files and output HDF5 file
-bag_folder = "/data/logs/home_record"  # Change this to your actual folder
-output_dir = "converted_standard"
+# Define input folder containing ROS bag files and output HDF5 files
+bag_folder = "sim_record"  # Change this to your actual folder
+robot_name = "vchicinvabot"
+output_dir = "record/converted_standard"
 os.makedirs(output_dir, exist_ok=True)
-hdf5_path = os.path.join(output_dir, "all_demos.hdf5")
+hdf5_path_old = os.path.join(output_dir, "all_demos_old.hdf5")  # Old wheel topic
+hdf5_path_new = os.path.join(output_dir, "all_demos_new.hdf5")  # New wheel topic
 
 # Topics of interest
-image_topic = "/chicinvabot/camera_node/image/compressed"
-cmd_topic = "/chicinvabot/wheels_driver_node/wheels_cmd"
+image_topic = f"/{robot_name}/camera_node/image/compressed"
+old_cmd_topic = f"/{robot_name}/wheels_driver_node/wheels_cmd"
+new_cmd_topic = f"/{robot_name}/car_cmd_switch_node/cmd"
 
-# Initialize HDF5 file
-with h5py.File(hdf5_path, "w") as f:
-    # Create main data group
-    grp = f.create_group("data")
+# Initialize HDF5 files
+for hdf5_path in [hdf5_path_old, hdf5_path_new]:
+    with h5py.File(hdf5_path, "w") as f:
+        f.create_group("data")
 
-    # Process each bag file in the folder
-    bag_files = sorted([f for f in os.listdir(bag_folder) if f.endswith(".bag")])
+# Process each bag file
+bag_files = sorted([f for f in os.listdir(bag_folder) if f.endswith(".bag")])
 
-    for idx, bag_file in enumerate(bag_files, start=1):
-        bag_path = os.path.join(bag_folder, bag_file)
-        print(f"Processing {bag_file} as demo_{idx}...")
+for idx, bag_file in enumerate(bag_files, start=1):
+    bag_path = os.path.join(bag_folder, bag_file)
+    print(f"Processing {bag_file} as demo_{idx}...")
 
-        # ROS bag reader
-        bag = rosbag.Bag(bag_path)
-        bridge = CvBridge()
+    bag = rosbag.Bag(bag_path)
+    bridge = CvBridge()
 
-        # Storage lists
-        timestamps = []
-        images = []
-        actions = []
+    # Data structures
+    timestamps = []
+    images = []
+    actions_old = []
+    actions_new = []
 
-        # Action buffer (deque for fast lookup)
-        latest_action = [0.0, 0.0]  # Default action if no command exists
-        action_queue = deque()
+    latest_action_old = [0.0, 0.0]  # Default for old topic
+    latest_action_new = [0.0, 0.0]  # Default for new topic (gamma, vel_wheel)
+    action_queue_old = deque()
+    action_queue_new = deque()
 
-        for topic, msg, t in bag.read_messages(topics=[image_topic, cmd_topic]):
-            timestamp = t.to_sec()
+    for topic, msg, t in bag.read_messages(topics=[image_topic, old_cmd_topic, new_cmd_topic]):
+        timestamp = t.to_sec()
 
-            if topic == cmd_topic:
-                # Store the latest wheel command
-                latest_action = [round(msg.vel_left, 3), round(msg.vel_right, 3)]
-                action_queue.append((timestamp, latest_action))
+        if topic == old_cmd_topic:
+            latest_action_old = [round(msg.vel_left, 3), round(msg.vel_right, 3)]
+            action_queue_old.append((timestamp, latest_action_old))
 
-            elif topic == image_topic:
-                # Convert image message to OpenCV format
-                frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+        elif topic == new_cmd_topic:
+            latest_action_new = [round(msg.v, 3), round(msg.omega, 3)]
+            action_queue_new.append((timestamp, latest_action_new))
 
-                # Find closest action timestamp (FIFO method)
-                while action_queue and action_queue[0][0] < timestamp - 0.1:  # Allow small delay tolerance
-                    action_queue.popleft()  # Remove outdated actions
+        elif topic == image_topic:
+            frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
 
-                action = latest_action if action_queue else [0.0, 0.0]  # Default to zero if no recent action
+            while action_queue_old and action_queue_old[0][0] < timestamp - 0.1:
+                action_queue_old.popleft()
 
-                # Store data
-                timestamps.append(timestamp)
-                images.append(frame)
-                actions.append(action)
+            while action_queue_new and action_queue_new[0][0] < timestamp - 0.1:
+                action_queue_new.popleft()
 
-        bag.close()
+            action_old = latest_action_old if action_queue_old else [0.0, 0.0]
+            action_new = latest_action_new if action_queue_new else [0.0, 0.0]
 
-        # Convert to NumPy arrays
-        timestamps = np.array(timestamps, dtype=np.float64)
-        actions = np.array(actions, dtype=np.float32)
-        images = np.array(images, dtype=np.uint8)  # Store images efficiently
+            timestamps.append(timestamp)
+            images.append(frame)
+            actions_old.append(action_old)
+            actions_new.append(action_new)
 
-        num_samples = len(actions) - 1  # Align with obs/next_obs
+    bag.close()
 
-        if num_samples <= 0:
-            print(f"Skipping {bag_file} (no valid samples).")
-            continue
+    # Convert to NumPy arrays
+    timestamps = np.array(timestamps, dtype=np.float64)
+    images = np.array(images, dtype=np.uint8)
+    actions_old = np.array(actions_old, dtype=np.float32)
+    actions_new = np.array(actions_new, dtype=np.float32)
 
-        # Create a new demonstration group for this bag
-        demo_grp = grp.create_group(f"demo_{idx}")
-        demo_grp.attrs["num_samples"] = num_samples
+    num_samples = len(actions_old) - 1
+    if num_samples <= 0:
+        print(f"Skipping {bag_file} (no valid samples).")
+        continue
 
-        # Assign observations
-        obs_grp = demo_grp.create_group("obs")
-        next_obs_grp = demo_grp.create_group("next_obs")
-
-        obs_grp.create_dataset("observation", data=images[:-1])  # Remove last to align with next_obs
-        next_obs_grp.create_dataset("observation", data=images[1:])  # Shifted by one step
-
-        # Store states (image-based representation)
-        demo_grp.create_dataset("states", data=images)  # States = raw observations
-
-        # Store actions
-        demo_grp.create_dataset("actions", data=actions[:-1])  # Remove last to align with obs
-
-        # Store rewards (set to 0 for all steps)
-        demo_grp.create_dataset("rewards", data=np.zeros(num_samples, dtype=np.float64))
-
-        # Store dones (set last done to 1, others 0)
+    # Write to old topic HDF5 file
+    with h5py.File(hdf5_path_old, "a") as f:
+        grp = f["data"].create_group(f"demo_{idx}")
+        grp.attrs["num_samples"] = num_samples
+        grp.create_dataset("obs/observation", data=images[:-1])
+        grp.create_dataset("next_obs/observation", data=images[1:])
+        grp.create_dataset("actions", data=actions_old[:-1])
+        grp.create_dataset("rewards", data=np.zeros(num_samples, dtype=np.float64))
         dones = np.zeros(num_samples, dtype=np.int64)
-        dones[-1] = 1  # Last timestep should be done
-        demo_grp.create_dataset("dones", data=dones)
+        dones[-1] = 1
+        grp.create_dataset("dones", data=dones)
 
-    # Add metadata attributes
-    now = datetime.datetime.now()
-    grp.attrs["date"] = f"{now.month}-{now.day}-{now.year}"
-    grp.attrs["time"] = f"{now.hour}:{now.minute}:{now.second}"
-    grp.attrs["repository_version"] = "1.0.0"  # Modify as needed
-    grp.attrs["env"] = "robot_env"  # Modify based on environment
+    # Write to new topic HDF5 file
+    with h5py.File(hdf5_path_new, "a") as f:
+        grp = f["data"].create_group(f"demo_{idx}")
+        grp.attrs["num_samples"] = num_samples
+        grp.create_dataset("obs/observation", data=images[:-1])
+        grp.create_dataset("next_obs/observation", data=images[1:])
+        grp.create_dataset("actions", data=actions_new[:-1])
+        grp.create_dataset("rewards", data=np.zeros(num_samples, dtype=np.float64))
+        dones = np.zeros(num_samples, dtype=np.int64)
+        dones[-1] = 1
+        grp.create_dataset("dones", data=dones)
 
-    # Example environment info
-    env_info = {
-        "controller": "velocity_control",
-        "robot_type": "differential_drive",
-        "additional_info": "Structured for Learning from Demonstration"
-    }
-    grp.attrs["env_info"] = json.dumps(env_info)
-
-print(f"Processing complete. Saved all demos to {hdf5_path}")
+print(f"Processing complete. Saved old topic data to {hdf5_path_old} and new topic data to {hdf5_path_new}")

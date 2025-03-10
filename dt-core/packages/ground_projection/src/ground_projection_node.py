@@ -198,6 +198,8 @@ class GroundProjectionNode(DTROS):
         cali_file_folder = "/data/config/calibrations/camera_extrinsic/"
         cali_file = cali_file_folder + rospy.get_namespace().strip("/") + ".yaml"
 
+        print(cali_file)
+
         # Locate calibration yaml file or use the default otherwise
         if not os.path.isfile(cali_file):
             self.log(
@@ -214,6 +216,7 @@ class GroundProjectionNode(DTROS):
         try:
             with open(cali_file, "r") as stream:
                 calib_data = yaml.load(stream, Loader=yaml.Loader)
+                print(calib_data)
         except yaml.YAMLError:
             msg = f"Error in parsing calibration file {cali_file} ... aborting"
             self.logerr(msg)
