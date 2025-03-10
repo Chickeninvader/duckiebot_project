@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Robomimic Training",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/robomimic/scripts/train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--config", "robomimic/exps/templates/bc_no_env.json",
+                "--dataset", "/data/logs/converted_standard/home_record.hdf5",
+                // "--config", "robomimic/exps/templates/bc.json",
+                // "--dataset", "/home/duckie/Desktop/simulation/robomimic/datasets/lift/ph/low_dim_v141.hdf5",
+                "--debug"
+            ]
+        }
+    ]
+}
