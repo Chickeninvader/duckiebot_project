@@ -125,3 +125,4 @@ venv.bak/
 macros_private.py
 
 .vscode/
+/.idea/

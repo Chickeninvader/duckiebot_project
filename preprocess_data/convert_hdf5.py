@@ -8,71 +8,80 @@ import datetime
 from cv_bridge import CvBridge
 from collections import deque
 
-# Define input folder containing ROS bag files and output HDF5 files
-bag_folder = "sim_record"  # Change this to your actual folder
-robot_name = "vchicinvabot"
+# Define input folders and output HDF5 file
+base_folder = "record"
 output_dir = "record/converted_standard"
 os.makedirs(output_dir, exist_ok=True)
-hdf5_path_old = os.path.join(output_dir, "all_demos_old.hdf5")  # Old wheel topic
-hdf5_path_new = os.path.join(output_dir, "all_demos_new.hdf5")  # New wheel topic
+
+# User selection for processing mode
+process_sim = True  # Set to False to exclude simulation data
+process_lab = False  # Set to False to exclude real-world data
+
+# Search for bag files recursively
+bag_files = []
+record_types = {"sim_record": "vchicinvabot", "lab_record": "chicinvabot"}
+
+for record_type, robot_name in record_types.items():
+    if (record_type == "sim_record" and not process_sim) or (record_type == "lab_record" and not process_lab):
+        continue
+    for root, _, files in os.walk(os.path.join(base_folder, record_type)):
+        for file in files:
+            if file.endswith(".bag"):
+                bag_files.append((os.path.join(root, file), record_type, robot_name))
+
+# Determine output filenames based on available records
+record_used = set(record_type for _, record_type, _ in bag_files)
+if not record_used:
+    print("No valid bag files found based on selection. Exiting.")
+    exit()
+
+output_filename = "_".join(sorted(record_used)) + ".hdf5"
+hdf5_path = os.path.join(output_dir, output_filename)
 
 # Topics of interest
-image_topic = f"/{robot_name}/camera_node/image/compressed"
-old_cmd_topic = f"/{robot_name}/wheels_driver_node/wheels_cmd"
-new_cmd_topic = f"/{robot_name}/car_cmd_switch_node/cmd"
+image_topics = {"sim_record": "/vchicinvabot/camera_node/image/compressed", "lab_record": "/chicinvabot/camera_node/image/compressed"}
+new_cmd_topics = {"sim_record": "/vchicinvabot/car_cmd_switch_node/cmd", "lab_record": "/chicinvabot/car_cmd_switch_node/cmd"}
 
-# Initialize HDF5 files
-for hdf5_path in [hdf5_path_old, hdf5_path_new]:
-    with h5py.File(hdf5_path, "w") as f:
-        f.create_group("data")
+# Initialize HDF5 file
+with h5py.File(hdf5_path, "w") as f:
+    f.create_group("data")
 
 # Process each bag file
-bag_files = sorted([f for f in os.listdir(bag_folder) if f.endswith(".bag")])
-
-for idx, bag_file in enumerate(bag_files, start=1):
-    bag_path = os.path.join(bag_folder, bag_file)
-    print(f"Processing {bag_file} as demo_{idx}...")
-
+for idx, (bag_path, record_type, robot_name) in enumerate(bag_files, start=1):
+    print(f"Processing {bag_path} as demo_{idx}...")
     bag = rosbag.Bag(bag_path)
     bridge = CvBridge()
 
     # Data structures
     timestamps = []
     images = []
-    actions_old = []
     actions_new = []
+    velocities = []
 
-    latest_action_old = [0.0, 0.0]  # Default for old topic
-    latest_action_new = [0.0, 0.0]  # Default for new topic (gamma, vel_wheel)
-    action_queue_old = deque()
+    latest_action_new = [0.0, 0.0]
     action_queue_new = deque()
 
-    for topic, msg, t in bag.read_messages(topics=[image_topic, old_cmd_topic, new_cmd_topic]):
+    image_topic = image_topics[record_type]
+    new_cmd_topic = new_cmd_topics[record_type]
+
+    for topic, msg, t in bag.read_messages(topics=[image_topic, new_cmd_topic]):
         timestamp = t.to_sec()
 
-        if topic == old_cmd_topic:
-            latest_action_old = [round(msg.vel_left, 3), round(msg.vel_right, 3)]
-            action_queue_old.append((timestamp, latest_action_old))
-
-        elif topic == new_cmd_topic:
+        if topic == new_cmd_topic:
             latest_action_new = [round(msg.v, 3), round(msg.omega, 3)]
             action_queue_new.append((timestamp, latest_action_new))
+            velocities.append(msg.v)
 
         elif topic == image_topic:
             frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
 
-            while action_queue_old and action_queue_old[0][0] < timestamp - 0.1:
-                action_queue_old.popleft()
-
             while action_queue_new and action_queue_new[0][0] < timestamp - 0.1:
                 action_queue_new.popleft()
 
-            action_old = latest_action_old if action_queue_old else [0.0, 0.0]
             action_new = latest_action_new if action_queue_new else [0.0, 0.0]
 
             timestamps.append(timestamp)
             images.append(frame)
-            actions_old.append(action_old)
             actions_new.append(action_new)
 
     bag.close()
@@ -80,36 +89,32 @@ for idx, bag_file in enumerate(bag_files, start=1):
     # Convert to NumPy arrays
     timestamps = np.array(timestamps, dtype=np.float64)
     images = np.array(images, dtype=np.uint8)
-    actions_old = np.array(actions_old, dtype=np.float32)
     actions_new = np.array(actions_new, dtype=np.float32)
+    velocities = np.array(velocities, dtype=np.float32)
 
-    num_samples = len(actions_old) - 1
+    num_samples = len(actions_new) - 1
     if num_samples <= 0:
-        print(f"Skipping {bag_file} (no valid samples).")
+        print(f"Skipping {bag_path} (no valid samples).")
         continue
 
-    # Write to old topic HDF5 file
-    with h5py.File(hdf5_path_old, "a") as f:
-        grp = f["data"].create_group(f"demo_{idx}")
-        grp.attrs["num_samples"] = num_samples
-        grp.create_dataset("obs/observation", data=images[:-1])
-        grp.create_dataset("next_obs/observation", data=images[1:])
-        grp.create_dataset("actions", data=actions_old[:-1])
-        grp.create_dataset("rewards", data=np.zeros(num_samples, dtype=np.float64))
-        dones = np.zeros(num_samples, dtype=np.int64)
-        dones[-1] = 1
-        grp.create_dataset("dones", data=dones)
+    avg_velocity = np.mean(velocities) if velocities.size > 0 else 0.0
+    std_velocity = np.std(velocities) if velocities.size > 0 else 0.0
+    frame_rate = num_samples / (timestamps[-1] - timestamps[0]) if num_samples > 0 else 0.0
 
-    # Write to new topic HDF5 file
-    with h5py.File(hdf5_path_new, "a") as f:
+    print(f"Summary for {bag_path}:")
+    print(f"  Timesteps: {num_samples}")
+    print(f"  Average Velocity: {avg_velocity:.3f}")
+    print(f"  Velocity Std Dev: {std_velocity:.3f}")
+    print(f"  Frame Rate: {frame_rate:.3f} FPS")
+
+    # Write to HDF5 file
+    with h5py.File(hdf5_path, "a") as f:
         grp = f["data"].create_group(f"demo_{idx}")
         grp.attrs["num_samples"] = num_samples
+        grp.attrs["frame_rate"] = frame_rate
         grp.create_dataset("obs/observation", data=images[:-1])
-        grp.create_dataset("next_obs/observation", data=images[1:])
         grp.create_dataset("actions", data=actions_new[:-1])
         grp.create_dataset("rewards", data=np.zeros(num_samples, dtype=np.float64))
-        dones = np.zeros(num_samples, dtype=np.int64)
-        dones[-1] = 1
-        grp.create_dataset("dones", data=dones)
+        grp.create_dataset("dones", data=np.concatenate([np.zeros(num_samples - 1, dtype=np.int64), [1]]))
 
-print(f"Processing complete. Saved old topic data to {hdf5_path_old} and new topic data to {hdf5_path_new}")
+print(f"Processing complete. Saved data to {hdf5_path}")
