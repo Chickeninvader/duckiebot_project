@@ -18,6 +18,10 @@ process_sim = False  # Set to False to exclude simulation data
 process_lab = True  # Set to False to exclude real-world data
 process_human = False  # Set to True for human, False for non-human, None for both
 
+# Constant use for duckiebot
+OMEGA_MAX = 8.0
+GAIN = 1
+
 # Search for bag files recursively
 bag_files = []
 record_types = {"sim_record": "vchicinvabot", "lab_record": "chicinvabot"}
@@ -66,6 +70,7 @@ for idx, (bag_path, record_type, robot_name, is_human) in enumerate(bag_files, s
     images = []
     actions_new = []
     velocities = []
+    omegas = []
 
     latest_action_new = [0.0, 0.0]
     action_queue_new = deque()
@@ -77,9 +82,11 @@ for idx, (bag_path, record_type, robot_name, is_human) in enumerate(bag_files, s
         timestamp = t.to_sec()
 
         if topic == new_cmd_topic:
-            latest_action_new = [round(msg.v, 3), round(msg.omega, 3)]
+            # Velocity and angle need to be normalized since robomimic kept the output between -1 and 1 (tanh func)
+            latest_action_new = [round(msg.v, 3), round(msg.omega / OMEGA_MAX, 3)]
             action_queue_new.append((timestamp, latest_action_new))
             velocities.append(msg.v)
+            omegas.append(msg.omega / OMEGA_MAX)
 
         elif topic == image_topic:
             frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
@@ -100,6 +107,7 @@ for idx, (bag_path, record_type, robot_name, is_human) in enumerate(bag_files, s
     images = np.array(images, dtype=np.uint8)
     actions_new = np.array(actions_new, dtype=np.float32)
     velocities = np.array(velocities, dtype=np.float32)
+    omegas = np.array(omegas, dtype=np.float32)
 
     num_samples = len(actions_new) - 1
     if num_samples <= 0:
@@ -108,12 +116,22 @@ for idx, (bag_path, record_type, robot_name, is_human) in enumerate(bag_files, s
 
     avg_velocity = np.mean(velocities) if velocities.size > 0 else 0.0
     std_velocity = np.std(velocities) if velocities.size > 0 else 0.0
+    max_vel = np.max(velocities) if velocities.size > 0 else 0.0
+    min_vel = np.min(velocities) if velocities.size > 0 else 0.0
+    avg_omega = np.mean(omegas) if omegas.size > 0 else 0.0
+    std_omega = np.std(omegas) if omegas.size > 0 else 0.0
+    max_omega = np.max(omegas) if omegas.size > 0 else 0.0
+    min_omega = np.min(omegas) if omegas.size > 0 else 0.0
     frame_rate = num_samples / (timestamps[-1] - timestamps[0]) if num_samples > 0 else 0.0
 
     print(f"Summary for {bag_path}:")
     print(f"  Timesteps: {num_samples}")
     print(f"  Average Velocity: {avg_velocity:.3f}")
     print(f"  Velocity Std Dev: {std_velocity:.3f}")
+    print(f"  Cap in {min_vel} and {max_vel}")
+    print(f"  Average Omega: {avg_omega:.3f}")
+    print(f"  Omega Std Dev: {std_omega:.3f}")
+    print(f"  Cap in {min_omega} and {max_omega}")
     print(f"  Frame Rate: {frame_rate:.3f} FPS")
 
     # Write to HDF5 file
