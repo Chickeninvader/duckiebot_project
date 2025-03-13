@@ -261,7 +261,7 @@ class LaneControllerNode(DTROS):
         car_control_msg.header = pose_msg.header
 
         # Add commands to car message
-        car_control_msg.v = v
+        car_control_msg.v = v * 2
         car_control_msg.omega = omega
 
         self.publishCmd(car_control_msg)
