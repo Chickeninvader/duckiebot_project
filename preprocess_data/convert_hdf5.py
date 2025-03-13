@@ -14,8 +14,9 @@ output_dir = "record/converted_standard"
 os.makedirs(output_dir, exist_ok=True)
 
 # User selection for processing mode
-process_sim = True  # Set to False to exclude simulation data
-process_lab = False  # Set to False to exclude real-world data
+process_sim = False  # Set to False to exclude simulation data
+process_lab = True  # Set to False to exclude real-world data
+process_human = False  # Set to True for human, False for non-human, None for both
 
 # Search for bag files recursively
 bag_files = []
@@ -25,17 +26,25 @@ for record_type, robot_name in record_types.items():
     if (record_type == "sim_record" and not process_sim) or (record_type == "lab_record" and not process_lab):
         continue
     for root, _, files in os.walk(os.path.join(base_folder, record_type)):
+        is_human = "human_control" in root
+        if process_human is not None and is_human != process_human:
+            continue
         for file in files:
             if file.endswith(".bag"):
-                bag_files.append((os.path.join(root, file), record_type, robot_name))
+                bag_files.append((os.path.join(root, file), record_type, robot_name, is_human))
 
 # Determine output filenames based on available records
-record_used = set(record_type for _, record_type, _ in bag_files)
+record_used = set(record_type for _, record_type, _, _ in bag_files)
 if not record_used:
     print("No valid bag files found based on selection. Exiting.")
     exit()
 
-output_filename = "_".join(sorted(record_used)) + ".hdf5"
+output_filename = "_".join(sorted(record_used))
+if process_human is True:
+    output_filename += "_human"
+elif process_human is False:
+    output_filename += "_nonhuman"
+output_filename += ".hdf5"
 hdf5_path = os.path.join(output_dir, output_filename)
 
 # Topics of interest
@@ -47,7 +56,7 @@ with h5py.File(hdf5_path, "w") as f:
     f.create_group("data")
 
 # Process each bag file
-for idx, (bag_path, record_type, robot_name) in enumerate(bag_files, start=1):
+for idx, (bag_path, record_type, robot_name, is_human) in enumerate(bag_files, start=1):
     print(f"Processing {bag_path} as demo_{idx}...")
     bag = rosbag.Bag(bag_path)
     bridge = CvBridge()
@@ -112,6 +121,7 @@ for idx, (bag_path, record_type, robot_name) in enumerate(bag_files, start=1):
         grp = f["data"].create_group(f"demo_{idx}")
         grp.attrs["num_samples"] = num_samples
         grp.attrs["frame_rate"] = frame_rate
+        grp.attrs["human"] = int(is_human)
         grp.create_dataset("obs/observation", data=images[:-1])
         grp.create_dataset("actions", data=actions_new[:-1])
         grp.create_dataset("rewards", data=np.zeros(num_samples, dtype=np.float64))
