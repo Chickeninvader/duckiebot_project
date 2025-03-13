@@ -8,7 +8,7 @@ import numpy as np
 from cv_bridge import CvBridge
 from duckietown.dtros import DTROS, NodeType
 from sensor_msgs.msg import CompressedImage
-from duckietown_msgs.msg import WheelsCmdStamped
+from duckietown_msgs.msg import Twist2DStamped
 from robomimic.utils import file_utils as FileUtils
 from robomimic.utils import torch_utils as TorchUtils
 
@@ -19,10 +19,10 @@ class InferenceNode(DTROS):
         # Load environment variables
         self.vehicle_name = os.getenv("VEHICLE_NAME", "default_vehicle")
         self.camera_topic = f"/{self.vehicle_name}/camera_node/image/compressed"
-        self.wheels_topic = f"/{self.vehicle_name}/wheels_driver_node/wheels_cmd"
+        self.cmd_topic = f"/{self.vehicle_name}/car_cmd_switch_node/cmd"
 
         # Load the policy
-        self.ckpt_path = str(os.getcwd()) + "/packages/robomimic_control/weights/training_run_20250303/20250303025924/models/model_epoch_30.pth"
+        self.ckpt_path = str(os.getcwd()) + "/packages/robomimic_control/weights/20250312150115/models/model_epoch_20.pth"
         self.device = TorchUtils.get_torch_device(try_to_use_cuda=True)
         self.policy, _ = FileUtils.policy_from_checkpoint(ckpt_path=self.ckpt_path, device=self.device, verbose=True)
 
@@ -31,12 +31,12 @@ class InferenceNode(DTROS):
 
         # ROS Subscribers & Publishers
         self.sub_camera = rospy.Subscriber(self.camera_topic, CompressedImage, self.process_image, queue_size=1)
-        self.pub_wheels = rospy.Publisher(self.wheels_topic, WheelsCmdStamped, queue_size=1)
+        self.pub_cmd = rospy.Publisher(self.cmd_topic, Twist2DStamped, queue_size=1)
 
         self.log("InferenceNode initialized.")
 
     def process_image(self, msg):
-        """Processes an image from the camera, runs inference, and sends wheel commands."""
+        """Processes an image from the camera, runs inference, and sends velocity commands."""
         try:
             # Convert image message to OpenCV format
             np_arr = np.frombuffer(msg.data, np.uint8)
@@ -48,8 +48,8 @@ class InferenceNode(DTROS):
             # Get action from policy
             action = self.get_policy_action(obs_dict)
 
-            # Publish wheel command
-            self.publish_wheel_command(action)
+            # Publish velocity command
+            self.publish_velocity_command(action)
 
         except Exception as e:
             self.log(f"Error in process_image: {e}", type="error")
@@ -68,20 +68,19 @@ class InferenceNode(DTROS):
             action = self.policy.policy.get_action(obs_dict)
         return action.cpu().numpy().flatten()
 
-    def publish_wheel_command(self, action):
-        """Publishes the action as wheel commands."""
-        wheel_cmd = WheelsCmdStamped()
-        wheel_cmd.vel_left = float(action[0])  
-        wheel_cmd.vel_right = float(action[1]) 
-        self.log(f"left: {wheel_cmd.vel_left} right: {wheel_cmd.vel_right}")
-        self.pub_wheels.publish(wheel_cmd)
+    def publish_velocity_command(self, action):
+        """Publishes the action as a velocity command."""
+        cmd_msg = Twist2DStamped()
+        cmd_msg.v = float(action[0])  # Linear velocity
+        cmd_msg.omega = float(action[1])  # Angular velocity
+        self.log(f"Velocity: {cmd_msg.v}, Omega: {cmd_msg.omega}")
+        self.pub_cmd.publish(cmd_msg)
 
     def on_shutdown(self):
         """Stops the robot on shutdown."""
-        stop_cmd = WheelsCmdStamped(vel_left=0, vel_right=0)
-        self.pub_wheels.publish(stop_cmd)
+        stop_cmd = Twist2DStamped(v=0, omega=0)
+        self.pub_cmd.publish(stop_cmd)
 
 if __name__ == "__main__":
     node = InferenceNode(node_name="inference_node")
     rospy.spin()
-

@@ -14,3 +14,6 @@ ffmpeg
 
 # needed by cmake when installed via pip
 file
+
+# If you use robomimic, uncomment this
+# libhdf5-dev
