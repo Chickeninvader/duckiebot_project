@@ -3,3 +3,4 @@ dt-core/packages/robomimic_control/weights/
 preprocess_data/record/*
 /robomimic_project/.idea/
 /robomimic_project/.vscode/
+/robomimic_project/bc_trained_models

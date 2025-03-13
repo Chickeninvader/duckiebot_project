@@ -10,3 +10,4 @@ ros-node-utils==2.0.0
 compmake-z6==6.1.5
 
 # robomimic, in case of having enough memory
+robomimic
