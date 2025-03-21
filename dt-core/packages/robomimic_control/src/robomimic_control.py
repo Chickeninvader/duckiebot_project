@@ -16,13 +16,21 @@ class InferenceNode(DTROS):
     def __init__(self, node_name):
         super(InferenceNode, self).__init__(node_name=node_name, node_type=NodeType.PERCEPTION)
 
+        # Load constant:
+        self.OMEGA_MAX = 8.0
+
+        self.curr_frame_count = 0
+        self.buffer_size = 6
         # Load environment variables
         self.vehicle_name = os.getenv("VEHICLE_NAME", "default_vehicle")
         self.camera_topic = f"/{self.vehicle_name}/camera_node/image/compressed"
         self.cmd_topic = f"/{self.vehicle_name}/car_cmd_switch_node/cmd"
 
         # Load the policy
-        self.ckpt_path = str(os.getcwd()) + "/packages/robomimic_control/weights/20250312150115/models/model_epoch_20.pth"
+        weights_dir = os.path.join(os.getcwd(), "packages/robomimic_control/weights")
+        subdir = os.listdir(weights_dir)[0]  # Get the only folder
+        self.ckpt_path = os.path.join(weights_dir, subdir, "models", "model_epoch_20.pth")
+        
         self.device = TorchUtils.get_torch_device(try_to_use_cuda=True)
         self.policy, _ = FileUtils.policy_from_checkpoint(ckpt_path=self.ckpt_path, device=self.device, verbose=True)
 
@@ -39,6 +47,9 @@ class InferenceNode(DTROS):
         """Processes an image from the camera, runs inference, and sends velocity commands."""
         try:
             # Convert image message to OpenCV format
+            self.curr_frame_count += 1
+            if (self.curr_frame_count % self.buffer_size != 0):
+                return
             np_arr = np.frombuffer(msg.data, np.uint8)
             image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
@@ -72,9 +83,9 @@ class InferenceNode(DTROS):
         """Publishes the action as a velocity command."""
         cmd_msg = Twist2DStamped()
         cmd_msg.v = float(action[0])  # Linear velocity
-        cmd_msg.omega = float(action[1])  # Angular velocity
+        cmd_msg.omega = float(action[1] * self.OMEGA_MAX)  # Angular velocity
         self.log(f"Velocity: {cmd_msg.v}, Omega: {cmd_msg.omega}")
-        self.pub_cmd.publish(cmd_msg)
+        # self.pub_cmd.publish(cmd_msg) for debugging
 
     def on_shutdown(self):
         """Stops the robot on shutdown."""
