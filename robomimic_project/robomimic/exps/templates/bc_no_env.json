@@ -12,7 +12,7 @@
         "save": {
             "enabled": true,
             "every_n_seconds": null,
-            "every_n_epochs": 10,
+            "every_n_epochs": null,
             "epochs": [],
             "on_best_validation": false,
             "on_best_rollout_return": false,
@@ -37,7 +37,7 @@
     },
     "train": {
         "data": null,
-        "output_dir": "bc_trained_models",
+        "output_dir": "~/Desktop/albert/duckiebot_project/robomimic_project/bc_trained_models",
         "num_data_workers": 0,
         "hdf5_cache_mode": "all",
         "hdf5_use_swmr": true,

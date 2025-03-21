@@ -1,36 +1,57 @@
 import os
-import json
-
-from cv_bridge import CvBridge
 import cv2
 import torch
 import rosbag
-import datetime
 import numpy as np
-import imageio
 import matplotlib.pyplot as plt
 from collections import deque
+from cv_bridge import CvBridge
 from robomimic.utils import file_utils as FileUtils
 from robomimic.utils import torch_utils as TorchUtils
 
 # Configuration
-bag_file = "record/lab_record/human_control_light_50/chicinvabot_2025-03-12-18-50-27.bag"  # Set your input bag file here
-base_path = "../robomimic_project/bc_trained_models/test/20250312150115/"
-ckpt_path = os.path.join(base_path, "models/model_epoch_20.pth")
-video_output_path = os.path.join(base_path, "videos")
+bag_file = "record/lab_record/human_control_light_50/chicinvabot_2025-03-12-18-50-27.bag"
+
+# Define the folder containing all base paths
+base_folder = "../robomimic_project/bc_trained_models"
+
+# Get all valid subdirectories that contain 'models/model_epoch_20.pth'
+base_paths = []
+for subdir in os.listdir(base_folder):
+    subdir_path = os.path.join(base_folder, subdir)
+    if os.path.isdir(subdir_path):
+        # Look for deeper subdirectories inside this subdir
+        for deeper_subdir in os.listdir(subdir_path):
+            deeper_subdir_path = os.path.join(subdir_path, deeper_subdir)
+            if os.path.isdir(deeper_subdir_path):
+                ckpt_path = os.path.join(deeper_subdir_path, "models", "model_epoch_20.pth")
+                if os.path.exists(ckpt_path):
+                    base_paths.append(deeper_subdir_path)
+
+# Ensure at least one valid path is found
+if not base_paths:
+    raise FileNotFoundError("No valid model checkpoint directories found.")
+
+video_output_path = os.path.join(base_paths[0], "videos")
+OMEGA_MAX = 8.0
+GAIN = 1.0
 
 # ROS topics
 image_topic = "/chicinvabot/camera_node/image/compressed"
 cmd_topic = "/chicinvabot/car_cmd_switch_node/cmd"
 
-# Load inference model
+# Load inference models
+models = {}
 device = TorchUtils.get_torch_device(try_to_use_cuda=True)
-policy, _ = FileUtils.policy_from_checkpoint(ckpt_path=ckpt_path, device=device, verbose=True)
+for base_path in base_paths:
+    ckpt_path = os.path.join(base_path, "models/model_epoch_20.pth")
+    models[base_path], _ = FileUtils.policy_from_checkpoint(ckpt_path=ckpt_path, device=device, verbose=True)
 
 # Process ROS bag
 bag = rosbag.Bag(bag_file)
 bridge = CvBridge()
-timestamps, ground_truth_actions, predicted_actions = [], [], []
+timestamps, ground_truth_actions = [], []
+predicted_actions_all = {base_path: [] for base_path in base_paths}
 action_queue = deque()
 latest_action = [0.0, 0.0]  # vel, omega
 i = 0
@@ -39,7 +60,7 @@ for topic, msg, t in bag.read_messages(topics=[image_topic, cmd_topic]):
     timestamp = t.to_sec()
 
     if topic == cmd_topic:
-        latest_action = [round(msg.v, 3), round(msg.omega, 3)]  # Use vel and omega
+        latest_action = [round(msg.v, 3), round(msg.omega, 3)]
         action_queue.append((timestamp, latest_action))
 
     elif topic == image_topic:
@@ -52,57 +73,71 @@ for topic, msg, t in bag.read_messages(topics=[image_topic, cmd_topic]):
 
         # Prepare input for inference
         frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
-        frame = cv2.resize(frame, (640, 480)).astype(np.float32) / 255.0
-        frame = np.transpose(frame, (2, 0, 1))  # (C, H, W)
+        frame_resized = cv2.resize(frame, (640, 480))
+        frame_norm = frame_resized.astype(np.float32) / 255.0
+        frame_norm = np.transpose(frame_norm, (2, 0, 1))
+        obs_dict = {"observation": torch.tensor(frame_norm).unsqueeze(0).to(device)}
 
-        obs_dict = {"observation": torch.tensor(frame).unsqueeze(0).to(device)}
-        pred_action = policy.policy.get_action(obs_dict)[0].cpu().detach().numpy()
-        predicted_actions.append(pred_action.tolist())
+        # Run inference for each model
+        for base_path, policy in models.items():
+            pred_action = policy.policy.get_action(obs_dict)[0].cpu().detach().numpy()
+            predicted_actions_all[base_path].append(pred_action.tolist())
+
+        # Overlay text
+        gt_text = f"GT: Vel={action[0]:.2f}, Omega={action[1]:.2f}"
+        cv2.putText(frame_resized, gt_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
+
+        y_offset = 60
+        for base_path in base_paths:
+            pred_action = predicted_actions_all[base_path][-1]
+            pred_text = f"{os.path.basename(os.path.dirname(base_path))}: Vel={(pred_action[0] * GAIN):.2f}, Omega={(pred_action[1] * OMEGA_MAX):.2f}"
+            cv2.putText(frame_resized, pred_text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 1)
+            y_offset += 30
+
+        # Display the frame
+        cv2.imshow("Trajectory Comparison", frame_resized)
+
+        if cv2.waitKey(30) & 0xFF == ord('q'):
+            break
 
         i += 1
         print(f"Processed frame {i}")
 
 bag.close()
+cv2.destroyAllWindows()
 
-# Convert to NumPy
+# Ensure video output directory exists
+os.makedirs(video_output_path, exist_ok=True)
+
+# Extract omega and velocity values for plotting
 timestamps = np.array(timestamps)
-ground_truth_actions = np.array(ground_truth_actions)  # (N, 2) -> (vel, omega)
-predicted_actions = np.array(predicted_actions)  # (N, 2) -> (vel, omega)
+gt_omegas = np.array([a[1] for a in ground_truth_actions])
+gt_velocities = np.array([a[0] for a in ground_truth_actions])
 
-
-# Compute trajectory from velocity and angular velocity
-def compute_trajectory(actions, timestamps):
-    x, y, theta = 0, 0, 0  # Initial position
-    trajectory = [(x, y)]
-
-    for i in range(1, len(actions)):
-        dt = timestamps[i] - timestamps[i - 1]
-        v, omega = actions[i]
-
-        # Update state
-        x += v * np.cos(theta) * dt
-        y += v * np.sin(theta) * dt
-        theta += omega * dt
-        trajectory.append((x, y))
-
-    return np.array(trajectory)
-
-
-# Compute both trajectories
-gt_trajectory = compute_trajectory(ground_truth_actions, timestamps)
-pred_trajectory = compute_trajectory(predicted_actions, timestamps)
-
-# Plot the trajectories
-plt.figure(figsize=(8, 6))
-plt.plot(gt_trajectory[:, 0], gt_trajectory[:, 1], label="Ground Truth", linestyle="dashed", color="blue")
-plt.plot(pred_trajectory[:, 0], pred_trajectory[:, 1], label="Prediction", linestyle="solid", color="red")
-plt.scatter(gt_trajectory[0, 0], gt_trajectory[0, 1], marker="o", color="green", label="Start Position")
-plt.xlabel("X Position (m)")
-plt.ylabel("Y Position (m)")
+plt.figure(figsize=(10, 5))
+plt.plot(timestamps, gt_omegas, label="Ground Truth Omega", linestyle="dashed", color="blue")
+for base_path in base_paths:
+    pred_omegas = np.array([a[1] * OMEGA_MAX for a in predicted_actions_all[base_path]])
+    plt.plot(timestamps, pred_omegas, label=f"Predicted Omega ({os.path.basename(os.path.dirname(base_path))})", linestyle="solid")
+plt.xlabel("Time (s)")
+plt.ylabel("Omega (rad/s)")
 plt.legend()
-plt.title("2D Trajectory Comparison: Ground Truth vs Prediction")
+plt.title("Omega Over Time: Ground Truth vs Prediction")
 plt.grid()
-plt.savefig(os.path.join(video_output_path, "trajectory_comparison.png"))
+plt.savefig(os.path.join(video_output_path, "omega_comparison.png"))
 plt.show()
 
-print(f"Trajectory visualization saved to {video_output_path}")
+plt.figure(figsize=(10, 5))
+plt.plot(timestamps, gt_velocities, label="Ground Truth Velocity", linestyle="dashed", color="blue")
+for base_path in base_paths:
+    pred_velocities = np.array([a[0] * GAIN for a in predicted_actions_all[base_path]])
+    plt.plot(timestamps, pred_velocities, label=f"Predicted Velocity ({os.path.basename(os.path.dirname(base_path))})", linestyle="solid")
+plt.xlabel("Time (s)")
+plt.ylabel("Velocity (m/s)")
+plt.legend()
+plt.title("Velocity Over Time: Ground Truth vs Prediction")
+plt.grid()
+plt.savefig(os.path.join(video_output_path, "velocity_comparison.png"))
+plt.show()
+
+print(f"Graphs saved to {video_output_path}")
