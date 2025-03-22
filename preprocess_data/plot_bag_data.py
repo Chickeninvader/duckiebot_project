@@ -9,7 +9,7 @@ import argparse
 from collections import deque
 
 
-def compute_reward(d, phi, velocity, curvature, in_lane):
+def compute_reward(d, phi, velocity, in_lane):
     """Compute reward based on lane position, heading, velocity, and whether in lane"""
     # Reference values
     d_ref = 0.0  # Ideal lateral offset
@@ -86,14 +86,11 @@ def extract_bag_data(bag_path):
         cmd_v_interp = np.interp(data['lane_timestamps'], data['cmd_timestamps'], data['cmd_v'])
 
         for i in range(len(data['lane_timestamps'])):
-            # We still need curvature for reward calculation
-            curvature = 0.0  # Default value if not available
 
             reward = compute_reward(
                 data['lane_d'][i],
                 data['lane_phi'][i],
                 cmd_v_interp[i],
-                curvature,  # Using 0 as default
                 bool(data['lane_in_lane'][i])
             )
             data['rewards'].append(reward)
