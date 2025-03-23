@@ -10,30 +10,7 @@ import pandas as pd
 import rosbag
 from cv_bridge import CvBridge
 from tqdm import tqdm
-
-
-def compute_reward(d, phi, velocity, curvature, in_lane):
-    """Compute reward based on lane position, heading, velocity, and lane status."""
-    # Reference values
-    d_ref = 0.0  # Ideal lateral offset
-    phi_ref = 0.0  # Ideal heading angle
-
-    # Tunable weights
-    alpha = 1.0
-    beta = 0.5
-    gamma = 1.0
-    lambda_ = 5.0  # Penalty for leaving the lane
-
-    # Compute reward components
-    r_d = -alpha * abs(d - d_ref)
-    r_phi = -beta * abs(phi - phi_ref)
-    r_v = gamma * velocity  # Reward movement
-    r_lane = -lambda_ if not in_lane else 0  # Penalty for being out of lane
-
-    # Total reward
-    reward = r_d + r_phi + r_v + r_lane
-    return reward
-
+from utils import compute_reward  # Assuming you have a compute_reward function in utils.py
 
 def process_bag_files(process_sim, process_lab, process_human, subset=True, debug=False):
     """Process ROS bag files and store observations, actions, and rewards in HDF5 format."""
@@ -249,7 +226,7 @@ def process_bag_files(process_sim, process_lab, process_human, subset=True, debu
             lane_poses, in_lane_status = [], []
             action_queue = deque()
             latest_action = [0.0, 0.0]
-            latest_lane_pose = {"d": 0.0, "phi": 0.0, "curvature": 0.0, "in_lane": True}
+            latest_lane_pose = {"d": 0.0, "phi": 0.0, "in_lane": True}
 
             # Determine which topics to read
             topics_to_read = [image_topic, cmd_topic]
@@ -286,7 +263,6 @@ def process_bag_files(process_sim, process_lab, process_human, subset=True, debu
                             latest_lane_pose = {
                                 "d": getattr(msg, "d", 0.0),
                                 "phi": getattr(msg, "phi", 0.0),
-                                "curvature": getattr(msg, "curvature", 0.0),
                                 "in_lane": getattr(msg, "in_lane", True)  # Default to True if missing
                             }
                         except Exception as e:
@@ -341,7 +317,6 @@ def process_bag_files(process_sim, process_lab, process_human, subset=True, debu
                     lane_poses[i]["d"],
                     lane_poses[i]["phi"],
                     actions_np[i][0],  # velocity
-                    lane_poses[i]["curvature"],
                     lane_poses[i]["in_lane"]
                 )
                 rewards.append(reward)
