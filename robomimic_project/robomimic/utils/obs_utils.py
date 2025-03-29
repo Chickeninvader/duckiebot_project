@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import robomimic.utils.tensor_utils as TU
 
 # MACRO FOR VALID IMAGE CHANNEL SIZES
-VALID_IMAGE_CHANNEL_DIMS = {1, 3}       # depth, rgb
+VALID_IMAGE_CHANNEL_DIMS = {1, 3}  # depth, rgb
 
 # DO NOT MODIFY THIS!
 # This keeps track of observation types (modalities) - and is populated on call to @initialize_obs_utils_with_obs_specs.
@@ -41,9 +41,9 @@ OBS_MODALITY_CLASSES = {}
 # in their config, without having to manually register their class internally.
 # This also future-proofs us for any additional encoder / randomizer classes we would
 # like to add ourselves.
-OBS_ENCODER_CORES = {"None": None}          # Per-modality core net as defined in obs_cores.py, e.g., "VisualCore"
-OBS_RANDOMIZERS = {"None": None}            # Obs randomizer defined in obs_cores.py, e.g., "CropRandomizer"
-OBS_ENCODER_BACKBONES = {"None": None}      # Architecture backbones for encoding obervation, e.g., "ResNet18Conv"
+OBS_ENCODER_CORES = {"None": None}  # Per-modality core net as defined in obs_cores.py, e.g., "VisualCore"
+OBS_RANDOMIZERS = {"None": None}  # Obs randomizer defined in obs_cores.py, e.g., "CropRandomizer"
+OBS_ENCODER_BACKBONES = {"None": None}  # Architecture backbones for encoding obervation, e.g., "ResNet18Conv"
 
 
 def register_obs_key(target_class):
@@ -60,6 +60,7 @@ def register_randomizer(target_class):
     assert target_class not in OBS_RANDOMIZERS, f"Already registered obs randomizer {target_class}!"
     OBS_RANDOMIZERS[target_class.__name__] = target_class
 
+
 def register_encoder_backbone(target_class):
     assert target_class not in OBS_ENCODER_BACKBONES, f"Already registered obs encoder backbone {target_class}!"
     OBS_ENCODER_BACKBONES[target_class.__name__] = target_class
@@ -73,6 +74,7 @@ class ObservationKeyToModalityDict(dict):
     config. Thus, this dictionary will automatically handle those keys by implicitly associating them with the low_dim
     modality.
     """
+
     def __getitem__(self, item):
         # If a key doesn't already exist, warn the user and add default mapping
         if item not in self.keys():
@@ -104,7 +106,7 @@ def obs_encoder_kwargs_from_config(obs_encoder_config):
             cfg_cls = encoder_kwargs[f"{cls_name}_class"]
             if cfg_cls is not None:
                 assert cfg_cls in cores, f"No {cls_name} class with name {cfg_cls} found, must register this class before" \
-                    f"creating model!"
+                                         f"creating model!"
                 # encoder_kwargs[f"{cls_name}_class"] = cores[cfg_cls]
 
         # Process core and randomizer kwargs
@@ -210,7 +212,8 @@ def initialize_obs_utils_with_obs_specs(obs_modality_specs):
                             f"already exists with corresponding modality {OBS_KEYS_TO_MODALITIES[obs_key]}"
 
     # remove duplicate entries and store in global mapping
-    OBS_MODALITIES_TO_KEYS = { obs_modality : list(set(obs_modality_mapping[obs_modality])) for obs_modality in obs_modality_mapping }
+    OBS_MODALITIES_TO_KEYS = {obs_modality: list(set(obs_modality_mapping[obs_modality])) for obs_modality in
+                              obs_modality_mapping}
 
     print("\n============= Initialized Observation Utils with Obs Spec =============\n")
     for obs_modality, obs_keys in OBS_MODALITIES_TO_KEYS.items():
@@ -240,14 +243,14 @@ def initialize_obs_utils_with_config(config):
     """
     if config.algo_name == "hbc":
         obs_modality_specs = [
-            config.observation.planner.modalities, 
+            config.observation.planner.modalities,
             config.observation.actor.modalities,
         ]
         obs_encoder_config = config.observation.actor.encoder
     elif config.algo_name == "iris":
         obs_modality_specs = [
-            config.observation.value_planner.planner.modalities, 
-            config.observation.value_planner.value.modalities, 
+            config.observation.value_planner.planner.modalities,
+            config.observation.value_planner.value.modalities,
             config.observation.actor.modalities,
         ]
         obs_encoder_config = config.observation.actor.encoder
@@ -282,8 +285,8 @@ def center_crop(im, t_h, t_w):
     Returns:
         im (np.array or torch.Tensor): center cropped image
     """
-    assert(im.shape[-3] >= t_h and im.shape[-2] >= t_w)
-    assert(im.shape[-1] in [1, 3])
+    assert (im.shape[-3] >= t_h and im.shape[-2] >= t_w)
+    assert (im.shape[-1] in [1, 3])
     crop_h = int((im.shape[-3] - t_h) / 2)
     crop_w = int((im.shape[-2] - t_w) / 2)
     return im[..., crop_h:crop_h + t_h, crop_w:crop_w + t_w, :]
@@ -364,14 +367,42 @@ def process_obs_dict(obs_dict):
     Returns:
         new_dict (dict): dictionary where observation keys have been processed by their corresponding processors
     """
-    return { k : process_obs(obs=obs, obs_key=k) for k, obs in obs_dict.items() } # shallow copy
+    return {k: process_obs(obs=obs, obs_key=k) for k, obs in obs_dict.items()}  # shallow copy
 
 
+#
+# def process_frame(frame, channel_dim, scale):
+#     """
+#     Given frame fetched from dataset, process for network input. Converts array
+#     to float (from uint8), normalizes pixels from range [0, @scale] to [0, 1], and channel swaps
+#     from (H, W, C) to (C, H, W).
+#
+#     Args:
+#         frame (np.array or torch.Tensor): frame array
+#         channel_dim (int): Number of channels to sanity check for
+#         scale (float or None): Value to normalize inputs by
+#
+#     Returns:
+#         processed_frame (np.array or torch.Tensor): processed frame
+#     """
+#     # Channel size should either be 3 (RGB) or 1 (depth)
+#     assert (frame.shape[-1] == channel_dim)
+#     frame = TU.to_float(frame)
+#     if scale is not None:
+#         frame = frame / scale
+#         frame = frame.clip(0.0, 1.0)
+#     frame = batch_image_hwc_to_chw(frame)
+#
+#     return frame
+
+from torchvision.models import ResNet18_Weights
+
+# Note: The ResNet18_Weights class is used for preprocessing images to match the input format expected by
 def process_frame(frame, channel_dim, scale):
     """
     Given frame fetched from dataset, process for network input. Converts array
-    to float (from uint8), normalizes pixels from range [0, @scale] to [0, 1], and channel swaps
-    from (H, W, C) to (C, H, W).
+    to float (from uint8), normalizes pixels from range [0, @scale] to [0, 1], applies
+    ResNet18 preprocessing, and channel swaps from (H, W, C) to (C, H, W).
 
     Args:
         frame (np.array or torch.Tensor): frame array
@@ -379,15 +410,33 @@ def process_frame(frame, channel_dim, scale):
         scale (float or None): Value to normalize inputs by
 
     Returns:
-        processed_frame (np.array or torch.Tensor): processed frame
+        processed_frame (torch.Tensor): processed frame
     """
-    # Channel size should either be 3 (RGB) or 1 (depth)
     assert (frame.shape[-1] == channel_dim)
     frame = TU.to_float(frame)
-    if scale is not None:
-        frame = frame / scale
-        frame = frame.clip(0.0, 1.0)
+    # if scale is not None:
+    #     frame = frame / scale
+    #     frame = frame.clip(0.0, 1.0)
     frame = batch_image_hwc_to_chw(frame)
+
+    if isinstance(frame, np.ndarray):
+        frame = torch.tensor(frame, dtype=torch.float32)
+
+    orig_shape = frame.shape
+    if len(orig_shape) == 5:
+        # If the input is a batch of images with 5 dimensions (e.g., [B, T, C, H, W]),
+        # we need to reshape it to [B*T, C, H, W] for processing
+        B, T, C, H, W = orig_shape
+        frame = frame.view(B * T, C, H, W)
+
+    # Apply ResNet18 preprocessing
+    transform = ResNet18_Weights.IMAGENET1K_V1.transforms()
+    frame = transform(frame)
+
+    # revert back to the original shape if it was reshaped
+    if len(orig_shape) == 5:
+        # Reshape back to original batch dimensions
+        frame = frame.view(B, T, C, 224, 224)
 
     return frame
 
@@ -428,7 +477,7 @@ def unprocess_obs_dict(obs_dict):
         new_dict (dict): dictionary where observation keys have been unprocessed by
             their respective unprocessor methods
     """
-    return { k : unprocess_obs(obs=obs, obs_key=k) for k, obs in obs_dict.items() } # shallow copy
+    return {k: unprocess_obs(obs=obs, obs_key=k) for k, obs in obs_dict.items()}  # shallow copy
 
 
 def unprocess_frame(frame, channel_dim, scale):
@@ -445,7 +494,7 @@ def unprocess_frame(frame, channel_dim, scale):
         unprocessed_frame (np.array or torch.Tensor): frame passed through
             inverse operation of @process_frame
     """
-    assert frame.shape[-3] == channel_dim # check for channel dimension
+    assert frame.shape[-3] == channel_dim  # check for channel dimension
     frame = batch_image_chw_to_hwc(frame)
     if scale is not None:
         frame = scale * frame
@@ -620,9 +669,9 @@ def crop_image_from_indices(images, crop_indices, crop_height, crop_width):
     # For using @torch.gather, convert to flat indices from 2D indices, and also
     # repeat across the channel dimension. To get flat index of each pixel to grab for 
     # each sampled crop, we just use the mapping: ind = h_ind * @image_w + w_ind
-    all_crop_inds = all_crop_inds[..., 0] * image_w + all_crop_inds[..., 1] # shape [..., N, CH, CW]
-    all_crop_inds = TU.unsqueeze_expand_at(all_crop_inds, size=image_c, dim=-3) # shape [..., N, C, CH, CW]
-    all_crop_inds = TU.flatten(all_crop_inds, begin_axis=-2) # shape [..., N, C, CH * CW]
+    all_crop_inds = all_crop_inds[..., 0] * image_w + all_crop_inds[..., 1]  # shape [..., N, CH, CW]
+    all_crop_inds = TU.unsqueeze_expand_at(all_crop_inds, size=image_c, dim=-3)  # shape [..., N, C, CH, CW]
+    all_crop_inds = TU.flatten(all_crop_inds, begin_axis=-2)  # shape [..., N, C, CH * CW]
 
     # Repeat and flatten the source images -> [..., N, C, H * W] and then use gather to index with crop pixel inds
     images_to_crop = TU.unsqueeze_expand_at(images, size=num_crops, dim=-4)
@@ -630,8 +679,8 @@ def crop_image_from_indices(images, crop_indices, crop_height, crop_width):
     crops = torch.gather(images_to_crop, dim=-1, index=all_crop_inds)
     # [..., N, C, CH * CW] -> [..., N, C, CH, CW]
     reshape_axis = len(crops.shape) - 1
-    crops = TU.reshape_dimensions(crops, begin_axis=reshape_axis, end_axis=reshape_axis, 
-                    target_dims=(crop_height, crop_width))
+    crops = TU.reshape_dimensions(crops, begin_axis=reshape_axis, end_axis=reshape_axis,
+                                  target_dims=(crop_height, crop_width))
 
     if is_padded:
         # undo padding -> [..., C, CH, CW]
@@ -674,7 +723,7 @@ def sample_random_image_crops(images, crop_height, crop_width, num_crops, pos_en
         pos_y, pos_x = torch.meshgrid(torch.arange(h), torch.arange(w))
         pos_y = pos_y.float().to(device) / float(h)
         pos_x = pos_x.float().to(device) / float(w)
-        position_enc = torch.stack((pos_y, pos_x)) # shape [C, H, W]
+        position_enc = torch.stack((pos_y, pos_x))  # shape [C, H, W]
 
         # unsqueeze and expand to match leading dimensions -> shape [..., C, H, W]
         leading_shape = source_im.shape[:-3]
@@ -697,13 +746,13 @@ def sample_random_image_crops(images, crop_height, crop_width, num_crops, pos_en
     # Trick: sample in [0, 1) with rand, then re-scale to [0, M) and convert to long to get sampled ints
     crop_inds_h = (max_sample_h * torch.rand(*source_im.shape[:-3], num_crops).to(device)).long()
     crop_inds_w = (max_sample_w * torch.rand(*source_im.shape[:-3], num_crops).to(device)).long()
-    crop_inds = torch.cat((crop_inds_h.unsqueeze(-1), crop_inds_w.unsqueeze(-1)), dim=-1) # shape [..., N, 2]
+    crop_inds = torch.cat((crop_inds_h.unsqueeze(-1), crop_inds_w.unsqueeze(-1)), dim=-1)  # shape [..., N, 2]
 
     crops = crop_image_from_indices(
-        images=source_im, 
-        crop_indices=crop_inds, 
-        crop_height=crop_height, 
-        crop_width=crop_width, 
+        images=source_im,
+        crop_indices=crop_inds,
+        crop_height=crop_height,
+        crop_width=crop_width,
     )
 
     return crops, crop_inds
@@ -950,15 +999,15 @@ class ScanModality(Modality):
     @classmethod
     def _default_obs_processor(cls, obs):
         # Channel swaps ([...,] L, C) --> ([...,] C, L)
-        
+
         # First, add extra dimension at 2nd to last index to treat this as a frame
         shape = obs.shape
         new_shape = [*shape[:-2], 1, *shape[-2:]]
         obs = obs.reshape(new_shape)
-        
+
         # Convert shape
         obs = batch_image_hwc_to_chw(obs)
-        
+
         # Remove extra dimension (it's the second from last dimension)
         obs = obs.squeeze(-2)
         return obs
@@ -966,7 +1015,7 @@ class ScanModality(Modality):
     @classmethod
     def _default_obs_unprocessor(cls, obs):
         # Channel swaps ([B,] C, L) --> ([B,] L, C)
-        
+
         # First, add extra dimension at 1st index to treat this as a frame
         shape = obs.shape
         new_shape = [*shape[:-2], 1, *shape[-2:]]

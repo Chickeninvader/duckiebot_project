@@ -134,9 +134,9 @@
             ]
         },
         "rnn": {
-            "enabled": false,
+            "enabled": true,
             "horizon": 10,
-            "hidden_dim": 400,
+            "hidden_dim": 100,
             "rnn_type": "LSTM",
             "num_layers": 2,
             "open_loop": false,
