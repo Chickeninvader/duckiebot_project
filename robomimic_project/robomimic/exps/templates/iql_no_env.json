@@ -1,5 +1,5 @@
 {
-    "algo_name": "bc",
+    "algo_name": "iql",
     "experiment": {
         "name": "test",
         "validate": false,
@@ -12,7 +12,7 @@
         "save": {
             "enabled": true,
             "every_n_seconds": null,
-            "every_n_epochs": 10,
+            "every_n_epochs": 200,
             "epochs": [],
             "on_best_validation": false,
             "on_best_rollout_return": false,
@@ -37,11 +37,11 @@
     },
     "train": {
         "data": null,
-        "output_dir": "/scratch/ngocbach/duckiebot_project/robomimic_project/bc_trained_models",
+        "output_dir": "/scratch/ngocbach/duckiebot_project/robomimic_project/iql_trained_models",
         "num_data_workers": 0,
-        "hdf5_cache_mode": "all",
+        "hdf5_cache_mode": "low_dim",
         "hdf5_use_swmr": true,
-        "hdf5_load_next_obs": false,
+        "hdf5_load_next_obs": true,
         "hdf5_normalize_obs": false,
         "hdf5_filter_key": null,
         "hdf5_validation_filter_key": null,
@@ -51,122 +51,98 @@
         "pad_frame_stack": true,
         "dataset_keys": [
             "actions",
+            "rewards",
             "dones"
         ],
         "goal_mode": null,
         "cuda": true,
-        "batch_size": 64,
-        "num_epochs": 30,
+        "batch_size": 32,
+        "num_epochs": 600,
         "seed": 1
     },
     "algo": {
         "optim_params": {
-            "policy": {
-                "optimizer_type": "adam",
+            "critic": {
                 "learning_rate": {
                     "initial": 0.0001,
-                    "decay_factor": 0.1,
-                    "epoch_schedule": [],
-                    "scheduler_type": "multistep"
+                    "decay_factor": 0.0,
+                    "epoch_schedule": []
+                },
+                "regularization": {
+                    "L2": 0.0
+                }
+            },
+            "vf": {
+                "learning_rate": {
+                    "initial": 0.0001,
+                    "decay_factor": 0.0,
+                    "epoch_schedule": []
+                },
+                "regularization": {
+                    "L2": 0.0
+                }
+            },
+            "actor": {
+                "learning_rate": {
+                    "initial": 0.0001,
+                    "decay_factor": 0.0,
+                    "epoch_schedule": []
                 },
                 "regularization": {
                     "L2": 0.0
                 }
             }
         },
-        "loss": {
-            "l2_weight": 1.0,
-            "l1_weight": 0.0,
-            "cos_weight": 0.0
-        },
-        "actor_layer_dims": [
-            1024,
-            1024
-        ],
-        "gaussian": {
-            "enabled": false,
-            "fixed_std": false,
-            "init_std": 0.1,
-            "min_std": 0.01,
-            "std_activation": "softplus",
-            "low_noise_eval": true
-        },
-        "gmm": {
-            "enabled": false,
-            "num_modes": 5,
-            "min_std": 0.0001,
-            "std_activation": "softplus",
-            "low_noise_eval": true
-        },
-        "vae": {
-            "enabled": false,
-            "latent_dim": 14,
-            "latent_clip": null,
-            "kl_weight": 1.0,
-            "decoder": {
-                "is_conditioned": true,
-                "reconstruction_sum_across_elements": false
+        "discount": 0.99,
+        "target_tau": 0.01,
+        "actor": {
+            "net": {
+                "type": "gaussian",
+                "common": {
+                    "std_activation": "softplus",
+                    "low_noise_eval": true,
+                    "use_tanh": false
+                },
+                "gaussian": {
+                    "init_last_fc_weight": 0.001,
+                    "init_std": 0.3,
+                    "fixed_std": false
+                },
+                "gmm": {
+                    "num_modes": 5,
+                    "min_std": 0.0001
+                }
             },
-            "prior": {
-                "learn": false,
-                "is_conditioned": false,
-                "use_gmm": false,
-                "gmm_num_modes": 10,
-                "gmm_learn_weights": false,
-                "use_categorical": false,
-                "categorical_dim": 10,
-                "categorical_gumbel_softmax_hard": false,
-                "categorical_init_temp": 1.0,
-                "categorical_temp_anneal_step": 0.001,
-                "categorical_min_temp": 0.3
-            },
-            "encoder_layer_dims": [
+            "layer_dims": [
                 300,
                 400
             ],
-            "decoder_layer_dims": [
+            "max_gradient_norm": null
+        },
+        "critic": {
+            "ensemble": {
+                "n": 2
+            },
+            "layer_dims": [
                 300,
                 400
             ],
-            "prior_layer_dims": [
-                300,
-                400
-            ]
+            "use_huber": false,
+            "max_gradient_norm": null
         },
-        "rnn": {
-            "enabled": false,
-            "horizon": 10,
-            "hidden_dim": 400,
-            "rnn_type": "LSTM",
-            "num_layers": 2,
-            "open_loop": false,
-            "kwargs": {
-                "bidirectional": false
-            }
+        "adv": {
+            "clip_adv_value": null,
+            "beta": 1.0,
+            "use_final_clip": true
         },
-        "transformer": {
-            "enabled": false,
-            "context_length": 10,
-            "embed_dim": 512,
-            "num_layers": 6,
-            "num_heads": 8,
-            "emb_dropout": 0.1,
-            "attn_dropout": 0.1,
-            "block_output_dropout": 0.1,
-            "sinusoidal_embedding": false,
-            "activation": "gelu",
-            "supervise_all_steps": false,
-            "nn_parameter_for_timesteps": true
-        }
+        "vf_quantile": 0.9
     },
     "observation": {
         "modalities": {
             "obs": {
                 "low_dim": [
                 ],
-                "rgb": [
-                    "observation"
-                ],
+                "rgb": ["observation"],
                 "depth": [],
                 "scan": []
             },

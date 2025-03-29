@@ -12,7 +12,7 @@
         "save": {
             "enabled": true,
             "every_n_seconds": null,
-            "every_n_epochs": 50,
+            "every_n_epochs": 1,
             "epochs": [],
             "on_best_validation": false,
             "on_best_rollout_return": false,
@@ -37,9 +37,9 @@
     },
     "train": {
         "data": null,
-        "output_dir": "~/Desktop/albert/duckiebot_project/robomimic_project/cql_trained_models",
+        "output_dir": "/scratch/ngocbach/duckiebot_project/robomimic_project/cql_trained_models",
         "num_data_workers": 0,
-        "hdf5_cache_mode": "all",
+        "hdf5_cache_mode": "low_dim",
         "hdf5_use_swmr": true,
         "hdf5_load_next_obs": true,
         "hdf5_normalize_obs": false,
@@ -56,8 +56,8 @@
         ],
         "goal_mode": null,
         "cuda": true,
-        "batch_size": 256,
-        "num_epochs": 2000,
+        "batch_size": 1,
+        "num_epochs": 50,
         "seed": 1
     },
     "algo": {
@@ -104,8 +104,8 @@
                 }
             },
             "layer_dims": [
-                100,
-                200
+                300,
+                400
             ]
         },
         "critic": {
@@ -122,8 +122,8 @@
                 "n": 2
             },
             "layer_dims": [
-                100,
-                200
+                300,
+                400
             ]
         }
     },
@@ -157,7 +157,8 @@
                     "backbone_class": "ResNet18Conv",
                     "backbone_kwargs": {
                         "pretrained": true,
-                        "input_coord_conv": false
+                        "input_coord_conv": false,
+                        "freeze": true
                     },
                     "pool_class": "SpatialSoftmax",
                     "pool_kwargs": {
