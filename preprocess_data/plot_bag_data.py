@@ -93,87 +93,125 @@ def extract_bag_data(bag_path, bot_name):
     return data
 
 
-def save_to_csv(data, output_dir, dataset_type):
-    """Save the extracted data to CSV files"""
+def save_to_consolidated_csv(all_data, output_dir, dataset_type):
+    """Save all extracted data to a single consolidated CSV file"""
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     # Create a timestamp to avoid overwriting files
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Save detailed data for each bag file
-    for bag_data in data:
-        if not bag_data:
-            continue
+    # Consolidated data file
+    consolidated_file_name = f"{dataset_type}_consolidated_{timestamp}.csv"
+    consolidated_file_path = os.path.join(output_dir, consolidated_file_name)
 
-        bag_name = bag_data['name']
-        file_name = f"{dataset_type}_{bag_name}_{timestamp}.csv"
-        file_path = os.path.join(output_dir, file_name)
+    # Prepare to write consolidated data
+    consolidated_fieldnames = ['bag_name', 'timestamp', 'cmd_v', 'cmd_omega',
+                               'lane_d', 'lane_phi', 'in_lane', 'reward', 'terminated_early']
 
-        # Create a dataframe-like structure combining all timestamps
-        all_data = []
+    # Summary file for bag-level statistics
+    summary_file_name = f"{dataset_type}_bag_summary_{timestamp}.csv"
+    summary_file_path = os.path.join(output_dir, summary_file_name)
 
-        # Use lane timestamps as the base
-        for i, t in enumerate(bag_data['lane_timestamps']):
-            # Find closest cmd timestamp
-            if bag_data['cmd_timestamps']:
-                closest_cmd_idx = np.argmin(np.abs(np.array(bag_data['cmd_timestamps']) - t))
-                cmd_v = bag_data['cmd_v'][closest_cmd_idx]
-                cmd_omega = bag_data['cmd_omega'][closest_cmd_idx]
-            else:
-                cmd_v = None
-                cmd_omega = None
+    summary_fieldnames = [
+        'bag_name', 'total_frames', 'demo_time', 'avg_reward',
+        'min_reward', 'max_reward', 'std_reward',
+        'avg_lane_d', 'avg_lane_phi',
+        'in_lane_percentage', 'terminated_early'
+    ]
 
-            row = {
-                'timestamp': t,
-                'cmd_v': cmd_v,
-                'cmd_omega': cmd_omega,
-                'lane_d': bag_data['lane_d'][i],
-                'lane_phi': bag_data['lane_phi'][i],
-                'in_lane': bag_data['lane_in_lane'][i],
-                'reward': bag_data['rewards'][i] if i < len(bag_data['rewards']) else None
-            }
-            all_data.append(row)
+    # Open files and write headers
+    with open(consolidated_file_path, 'w', newline='') as consolidated_f, \
+         open(summary_file_path, 'w', newline='') as summary_f:
 
-        # Write to CSV
-        with open(file_path, 'w', newline='') as f:
-            fieldnames = ['timestamp', 'cmd_v', 'cmd_omega', 'lane_d', 'lane_phi', 'in_lane', 'reward']
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            for row in all_data:
-                writer.writerow(row)
+        consolidated_writer = csv.DictWriter(consolidated_f, fieldnames=consolidated_fieldnames)
+        consolidated_writer.writeheader()
 
-        print(f"Saved data for {bag_name} to {file_path}")
+        summary_writer = csv.DictWriter(summary_f, fieldnames=summary_fieldnames)
+        summary_writer.writeheader()
 
-    # Calculate statistics for summary
-    num_demos = len([d for d in data if d is not None])
-    total_frames = sum(len(d['lane_timestamps']) for d in data if d is not None)
-    all_rewards = [r for d in data if d is not None for r in d['rewards']]
+        # Process each bag file's data
+        for bag_data in all_data:
+            if not bag_data:
+                continue
+
+            # Write consolidated data
+            if bag_data['lane_timestamps']:
+                # Interpolate cmd values to match lane timestamps
+                if bag_data['cmd_timestamps']:
+                    cmd_v_interp = np.interp(
+                        bag_data['lane_timestamps'],
+                        bag_data['cmd_timestamps'],
+                        bag_data['cmd_v']
+                    )
+                    cmd_omega_interp = np.interp(
+                        bag_data['lane_timestamps'],
+                        bag_data['cmd_timestamps'],
+                        bag_data['cmd_omega']
+                    )
+                else:
+                    cmd_v_interp = [None] * len(bag_data['lane_timestamps'])
+                    cmd_omega_interp = [None] * len(bag_data['lane_timestamps'])
+
+                # Write each timestamped row to consolidated file
+                for i, t in enumerate(bag_data['lane_timestamps']):
+                    row = {
+                        'bag_name': bag_data['name'],
+                        'timestamp': t,
+                        'cmd_v': cmd_v_interp[i],
+                        'cmd_omega': cmd_omega_interp[i],
+                        'lane_d': bag_data['lane_d'][i],
+                        'lane_phi': bag_data['lane_phi'][i],
+                        'in_lane': bag_data['lane_in_lane'][i],
+                        'reward': bag_data['rewards'][i] if i < len(bag_data['rewards']) else None,
+                        'terminated_early': bag_data['terminated_early']
+                    }
+                    consolidated_writer.writerow(row)
+
+                # Calculate summary statistics for this bag file
+                total_frames = len(bag_data['lane_timestamps'])
+                demo_time = bag_data['lane_timestamps'][-1] if bag_data['lane_timestamps'] else 0
+
+                # Reward statistics
+                rewards = bag_data['rewards']
+                avg_reward = np.mean(rewards) if rewards else 0
+                min_reward = np.min(rewards) if rewards else 0
+                max_reward = np.max(rewards) if rewards else 0
+                std_reward = np.std(rewards) if rewards else 0
+
+                # Lane statistics
+                in_lane_percentage = np.mean(bag_data['lane_in_lane']) * 100 if bag_data['lane_in_lane'] else 0
+
+                # Write summary row
+                summary_row = {
+                    'bag_name': bag_data['name'],
+                    'total_frames': total_frames,
+                    'demo_time': demo_time,
+                    'avg_reward': avg_reward,
+                    'min_reward': min_reward,
+                    'max_reward': max_reward,
+                    'std_reward': std_reward,
+                    'avg_lane_d': np.mean(bag_data['lane_d']) if bag_data['lane_d'] else 0,
+                    'avg_lane_phi': np.mean(bag_data['lane_phi']) if bag_data['lane_phi'] else 0,
+                    'in_lane_percentage': in_lane_percentage,
+                    'terminated_early': bag_data['terminated_early']
+                }
+                summary_writer.writerow(summary_row)
+
+    print(f"Saved consolidated data to {consolidated_file_path}")
+    print(f"Saved bag file summary to {summary_file_path}")
+
+    # Calculate and return overall statistics
+    num_demos = len([d for d in all_data if d is not None])
+    total_frames = sum(len(d['lane_timestamps']) for d in all_data if d is not None)
+    all_rewards = [r for d in all_data if d is not None for r in d['rewards']]
     avg_reward = np.mean(all_rewards) if all_rewards else 0
-    total_time = sum(d['lane_timestamps'][-1] if d and d['lane_timestamps'] else 0 for d in data)
-
-    # Save summary statistics
-    summary_file_path = os.path.join(output_dir, f"{dataset_type}_summary_{timestamp}.csv")
-    with open(summary_file_path, 'w', newline='') as f:
-        fieldnames = ['Dataset', 'Bag Files Found', 'Demos Processed', 'Total Frames',
-                      'Avg Reward', 'Total Demo Time (s)']
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerow({
-            'Dataset': dataset_type,
-            'Bag Files Found': len(data),
-            'Demos Processed': num_demos,
-            'Total Frames': total_frames,
-            'Avg Reward': avg_reward,
-            'Total Demo Time (s)': total_time
-        })
-
-    print(f"Saved summary statistics to {summary_file_path}")
+    total_time = sum(d['lane_timestamps'][-1] if d and d['lane_timestamps'] else 0 for d in all_data)
 
     return {
-        'num_bag_files': len(data),
+        'num_bag_files': len(all_data),
         'num_demos': num_demos,
-        'skipped_files': [d['name'] for d in data if d is None],
+        'skipped_files': [d['name'] for d in all_data if d is None],
         'errors': [],
         'total_frames': total_frames,
         'avg_reward': avg_reward,
@@ -206,8 +244,8 @@ def process_dataset(base_dir, environment, output_dir):
         data = extract_bag_data(bag_file, bot_name)
         all_data.append(data)
 
-    # Save data to CSV
-    stats = save_to_csv(all_data, output_dir, environment)
+    # Save data to consolidated CSV
+    stats = save_to_consolidated_csv(all_data, output_dir, environment)
 
     return stats
 

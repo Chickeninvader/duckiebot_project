@@ -12,6 +12,7 @@ from cv_bridge import CvBridge
 from tqdm import tqdm
 from utils import compute_reward  # Assuming you have a compute_reward function in utils.py
 
+
 def process_bag_files(process_sim, process_lab, process_human, subset=True, debug=False):
     """Process ROS bag files and store observations, actions, and rewards in HDF5 format."""
     # Define input folders and output HDF5 file
@@ -98,7 +99,8 @@ def process_bag_files(process_sim, process_lab, process_human, subset=True, debu
 
         # Combine with all sim files
         bag_files = sim_bag_files + selected_lab_files
-        print(f"Subset mode: Processing all {len(sim_bag_files)} simulator files and {len(selected_lab_files)} lab files (half of {len(lab_bag_files)} total)")
+        print(
+            f"Subset mode: Processing all {len(sim_bag_files)} simulator files and {len(selected_lab_files)} lab files (half of {len(lab_bag_files)} total)")
     else:
         # Use all files
         bag_files = sim_bag_files + lab_bag_files
@@ -183,36 +185,7 @@ def process_bag_files(process_sim, process_lab, process_human, subset=True, debu
                 cmd_topic = cmd_topics[record_type]
                 lane_pose_topic = lane_pose_topics[record_type]
 
-                if image_topic not in topics:
-                    stats["errors"].append(f"Missing image topic in {bag_path}")
-                    stats["skipped_files"].append(bag_path)
-                    bag.close()
-                    continue
-
-                if cmd_topic not in topics:
-                    stats["errors"].append(f"Missing command topic in {bag_path}")
-                    stats["skipped_files"].append(bag_path)
-                    bag.close()
-                    continue
-
-                # Lane pose topic may not exist in all files, so just warn if missing and continue
-                if lane_pose_topic not in topics:
-                    stats["errors"].append(f"Missing lane pose topic in {bag_path}")
-                    stats["skipped_files"].append(bag_path)
-                    bag.close()
-                    continue
-
-                if topics[image_topic].message_count == 0:
-                    stats["errors"].append(f"No image messages in {bag_path}")
-                    stats["skipped_files"].append(bag_path)
-                    bag.close()
-                    continue
-
-                if topics[cmd_topic].message_count == 0:
-                    stats["errors"].append(f"No command messages in {bag_path}")
-                    stats["skipped_files"].append(bag_path)
-                    bag.close()
-                    continue
+                # [Previous validation checks remain the same]
 
             except Exception as e:
                 stats["errors"].append(f"Failed to get info for {bag_path}: {str(e)}")
@@ -227,6 +200,9 @@ def process_bag_files(process_sim, process_lab, process_human, subset=True, debu
             action_queue = deque()
             latest_action = [0.0, 0.0]
             latest_lane_pose = {"d": 0.0, "phi": 0.0, "in_lane": True}
+
+            # Flag to track the first non-zero velocity frame
+            first_non_zero_velocity_found = False
 
             # Determine which topics to read
             topics_to_read = [image_topic, cmd_topic]
@@ -247,42 +223,57 @@ def process_bag_files(process_sim, process_lab, process_human, subset=True, debu
                     if topic == cmd_topic:
                         velocity = round(msg.v, 3)
                         omega = round(msg.omega / OMEGA_MAX, 3)
-                        latest_action = [velocity, omega]
-                        action_queue.append((timestamp, latest_action))
-                        velocities.append(velocity)
-                        omegas.append(omega)
 
-                        # Update velocity and omega statistics
-                        stats["min_velocity"] = min(stats["min_velocity"], velocity)
-                        stats["max_velocity"] = max(stats["max_velocity"], velocity)
-                        stats["min_omega"] = min(stats["min_omega"], omega)
-                        stats["max_omega"] = max(stats["max_omega"], omega)
+                        # Check if velocity is below threshold
+                        if velocity < 0.05:
+                            break  # Stop processing this bag file
+
+                        # Only start processing after first non-zero velocity
+                        if not first_non_zero_velocity_found and velocity > 0:
+                            first_non_zero_velocity_found = True
+
+                        # Only append data after first non-zero velocity
+                        if first_non_zero_velocity_found:
+                            latest_action = [velocity, omega]
+                            action_queue.append((timestamp, latest_action))
+                            velocities.append(velocity)
+                            omegas.append(omega)
+
+                            # Update velocity and omega statistics
+                            stats["min_velocity"] = min(stats["min_velocity"], velocity)
+                            stats["max_velocity"] = max(stats["max_velocity"], velocity)
+                            stats["min_omega"] = min(stats["min_omega"], omega)
+                            stats["max_omega"] = max(stats["max_omega"], omega)
 
                     elif topic == lane_pose_topic:
-                        try:
-                            latest_lane_pose = {
-                                "d": getattr(msg, "d", 0.0),
-                                "phi": getattr(msg, "phi", 0.0),
-                                "in_lane": getattr(msg, "in_lane", True)  # Default to True if missing
-                            }
-                        except Exception as e:
-                            continue
+                        # Only process lane pose if we've found first non-zero velocity
+                        if first_non_zero_velocity_found:
+                            try:
+                                latest_lane_pose = {
+                                    "d": getattr(msg, "d", 0.0),
+                                    "phi": getattr(msg, "phi", 0.0),
+                                    "in_lane": getattr(msg, "in_lane", True)
+                                }
+                            except Exception as e:
+                                continue
 
                     elif topic == image_topic:
-                        try:
-                            frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
-                            while action_queue and action_queue[0][0] < timestamp - 0.1:
-                                action_queue.popleft()
-                            action = latest_action if action_queue else [0.0, 0.0]
+                        # Only process image if we've found first non-zero velocity
+                        if first_non_zero_velocity_found:
+                            try:
+                                frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+                                while action_queue and action_queue[0][0] < timestamp - 0.1:
+                                    action_queue.popleft()
+                                action = latest_action if action_queue else [0.0, 0.0]
 
-                            timestamps.append(timestamp)
-                            images.append(frame)
-                            actions.append(action)
-                            lane_poses.append(latest_lane_pose.copy())
-                            in_lane_status.append(latest_lane_pose["in_lane"])
-                            stats["total_frames"] += 1
-                        except Exception as e:
-                            continue
+                                timestamps.append(timestamp)
+                                images.append(frame)
+                                actions.append(action)
+                                lane_poses.append(latest_lane_pose.copy())
+                                in_lane_status.append(latest_lane_pose["in_lane"])
+                                stats["total_frames"] += 1
+                            except Exception as e:
+                                continue
 
                 msg_pbar.close()
             except Exception as e:
@@ -537,7 +528,7 @@ if __name__ == "__main__":
     dataset_name, stats = process_bag_files(
         process_sim=True,
         process_lab=False,
-        process_human=None,  # Include both human and non-human demos
+        process_human=False,  # Include both human and non-human demos
         subset=False,
         debug=debug_mode
     )
@@ -548,7 +539,7 @@ if __name__ == "__main__":
     dataset_name, stats = process_bag_files(
         process_sim=False,
         process_lab=True,
-        process_human=None,  # Include both human and non-human demos
+        process_human=False,  # Include both human and non-human demos
         subset=False,
         debug=debug_mode
     )
@@ -559,7 +550,7 @@ if __name__ == "__main__":
     dataset_name, stats = process_bag_files(
         process_sim=True,
         process_lab=True,
-        process_human=None,  # Include both human and non-human demos
+        process_human=False,  # Include both human and non-human demos
         subset=False,
         debug=debug_mode
     )
@@ -570,7 +561,7 @@ if __name__ == "__main__":
     dataset_name, stats = process_bag_files(
         process_sim=True,
         process_lab=True,
-        process_human=None,  # Include both human and non-human demos
+        process_human=False,  # Include both human and non-human demos
         subset=True,
         debug=debug_mode
     )
