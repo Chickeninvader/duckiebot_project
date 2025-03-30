@@ -7,7 +7,7 @@ def compute_reward(d, phi, velocity, in_lane):
 
     # Tunable weights
     alpha = 1.0
-    beta = 0.5
+    beta = 0.1
     gamma = 1.0
     lambda_ = 5.0  # High penalty for leaving the lane
 
