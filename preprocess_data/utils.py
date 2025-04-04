@@ -1,3 +1,5 @@
+import  math
+
 def compute_reward(d, phi, velocity, in_lane):
     """Compute reward based on lane position, heading, velocity, and whether in lane"""
     # Reference values
@@ -5,16 +7,16 @@ def compute_reward(d, phi, velocity, in_lane):
     phi_ref = 0.0  # Ideal heading angle
 
     # Tunable weights
-    alpha = 1.0     # Weight for lateral offset penalty
+    alpha = 5.0     # Weight for lateral offset penalty
     beta = 0.0  # No penalty for heading angle in this case
     gamma = 0.0  # No reward for velocity in this case
     lambda_ = 100.0  # High penalty for leaving the lane
 
     # Compute reward components
-    r_d = -alpha * abs(d - d_ref) * abs(d - d_ref)
+    r_d = -alpha * math.log(abs(d - d_ref) + 1 - 0.05)  # penalty for lateral offset greater than 0.05
     r_phi = -beta * abs(phi - phi_ref)
     r_v = gamma * velocity  # Reward movement
-    r_lane = -lambda_ if not in_lane else 1  # High penalty for being out of lane and encouragement for being in lane
+    r_lane = -lambda_ if not in_lane else 0  # High penalty for being out of lane and encouragement for being in lane
 
     reward = r_d + r_phi + r_v + r_lane
     return reward

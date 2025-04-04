@@ -303,12 +303,14 @@ def process_bag_files(process_sim, process_lab, process_human, subset=True, debu
 
             # Compute rewards
             rewards = []
+            temp_not_in_lane = 0
             for i in range(len(actions_np) - 1):
+                temp_not_in_lane = temp_not_in_lane + 1 if not lane_poses[i]["in_lane"] else temp_not_in_lane
                 reward = compute_reward(
                     lane_poses[i]["d"],
                     lane_poses[i]["phi"],
                     actions_np[i][0],  # velocity
-                    lane_poses[i]["in_lane"]
+                    temp_not_in_lane < 3,  # in_lane status (True if in lane for more than 3 frames, hack to avoid noise)
                 )
                 rewards.append(reward)
             rewards_np = np.array(rewards)
