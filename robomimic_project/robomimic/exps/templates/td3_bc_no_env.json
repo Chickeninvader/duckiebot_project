@@ -39,7 +39,7 @@
         "data": null,
         "output_dir": "/scratch/ngocbach/duckiebot_project/robomimic_project/td3_bc_trained_models",
         "num_data_workers": 4,
-        "hdf5_cache_mode": "low_dim",
+        "hdf5_cache_mode": "all",
         "hdf5_use_swmr": true,
         "hdf5_load_next_obs": true,
         "hdf5_normalize_obs": false,
@@ -56,7 +56,7 @@
         ],
         "goal_mode": null,
         "cuda": true,
-        "batch_size": 64,
+        "batch_size": 16,
         "num_epochs": 30,
         "seed": 1
     },
@@ -141,20 +141,6 @@
             "rgb": {
                 "core_class": "VisualCore",
                 "core_kwargs": {
-                    "feature_dimension": 64,
-                    "backbone_class": "ResNet18Conv",
-                    "backbone_kwargs": {
-                        "pretrained": true,
-                        "input_coord_conv": false,
-                        "freeze": true
-                    },
-                    "pool_class": "SpatialSoftmax",
-                    "pool_kwargs": {
-                        "num_kp": 32,
-                        "learnable_temperature": false,
-                        "temperature": 1.0,
-                        "noise_std": 0.0
-                    }
                 },
                 "obs_randomizer_class": null,
                 "obs_randomizer_kwargs": {}

@@ -70,7 +70,7 @@
                     "scheduler_type": "multistep"
                 },
                 "regularization": {
-                    "L2": 0.0
+                    "L2": 1.0
                 }
             }
         },
@@ -80,8 +80,8 @@
             "cos_weight": 0.0
         },
         "actor_layer_dims": [
-            1024,
-            1024
+            256,
+            256
         ],
         "gaussian": {
             "enabled": false,
@@ -187,20 +187,7 @@
             "rgb": {
                 "core_class": "VisualCore",
                 "core_kwargs": {
-                    "feature_dimension": 64,
-                    "backbone_class": "ResNet18Conv",
-                    "backbone_kwargs": {
-                        "pretrained": true,
-                        "input_coord_conv": false,
-                        "freeze": true
-                    },
-                    "pool_class": "SpatialSoftmax",
-                    "pool_kwargs": {
-                        "num_kp": 32,
-                        "learnable_temperature": false,
-                        "temperature": 1.0,
-                        "noise_std": 0.0
-                    }
+
                 },
                 "obs_randomizer_class": null,
                 "obs_randomizer_kwargs": {}

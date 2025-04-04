@@ -370,39 +370,12 @@ def process_obs_dict(obs_dict):
     return {k: process_obs(obs=obs, obs_key=k) for k, obs in obs_dict.items()}  # shallow copy
 
 
-#
-# def process_frame(frame, channel_dim, scale):
-#     """
-#     Given frame fetched from dataset, process for network input. Converts array
-#     to float (from uint8), normalizes pixels from range [0, @scale] to [0, 1], and channel swaps
-#     from (H, W, C) to (C, H, W).
-#
-#     Args:
-#         frame (np.array or torch.Tensor): frame array
-#         channel_dim (int): Number of channels to sanity check for
-#         scale (float or None): Value to normalize inputs by
-#
-#     Returns:
-#         processed_frame (np.array or torch.Tensor): processed frame
-#     """
-#     # Channel size should either be 3 (RGB) or 1 (depth)
-#     assert (frame.shape[-1] == channel_dim)
-#     frame = TU.to_float(frame)
-#     if scale is not None:
-#         frame = frame / scale
-#         frame = frame.clip(0.0, 1.0)
-#     frame = batch_image_hwc_to_chw(frame)
-#
-#     return frame
 
-from torchvision.models import ResNet18_Weights
-
-# Note: The ResNet18_Weights class is used for preprocessing images to match the input format expected by
 def process_frame(frame, channel_dim, scale):
     """
     Given frame fetched from dataset, process for network input. Converts array
-    to float (from uint8), normalizes pixels from range [0, @scale] to [0, 1], applies
-    ResNet18 preprocessing, and channel swaps from (H, W, C) to (C, H, W).
+    to float (from uint8), normalizes pixels from range [0, @scale] to [0, 1], and channel swaps
+    from (H, W, C) to (C, H, W).
 
     Args:
         frame (np.array or torch.Tensor): frame array
@@ -410,35 +383,62 @@ def process_frame(frame, channel_dim, scale):
         scale (float or None): Value to normalize inputs by
 
     Returns:
-        processed_frame (torch.Tensor): processed frame
+        processed_frame (np.array or torch.Tensor): processed frame
     """
+    # Channel size should either be 3 (RGB) or 1 (depth)
     assert (frame.shape[-1] == channel_dim)
     frame = TU.to_float(frame)
-    # if scale is not None:
-    #     frame = frame / scale
-    #     frame = frame.clip(0.0, 1.0)
+    if scale is not None:
+        frame = frame / scale
+        frame = frame.clip(0.0, 1.0)
     frame = batch_image_hwc_to_chw(frame)
 
-    if isinstance(frame, np.ndarray):
-        frame = torch.tensor(frame, dtype=torch.float32)
-
-    orig_shape = frame.shape
-    if len(orig_shape) == 5:
-        # If the input is a batch of images with 5 dimensions (e.g., [B, T, C, H, W]),
-        # we need to reshape it to [B*T, C, H, W] for processing
-        B, T, C, H, W = orig_shape
-        frame = frame.view(B * T, C, H, W)
-
-    # Apply ResNet18 preprocessing
-    transform = ResNet18_Weights.IMAGENET1K_V1.transforms()
-    frame = transform(frame)
-
-    # revert back to the original shape if it was reshaped
-    if len(orig_shape) == 5:
-        # Reshape back to original batch dimensions
-        frame = frame.view(B, T, C, 224, 224)
-
     return frame
+
+# from torchvision.models import ResNet18_Weights
+#
+# # Note: The ResNet18_Weights class is used for preprocessing images to match the input format expected by
+# def process_frame(frame, channel_dim, scale):
+#     """
+#     Given frame fetched from dataset, process for network input. Converts array
+#     to float (from uint8), normalizes pixels from range [0, @scale] to [0, 1], applies
+#     ResNet18 preprocessing, and channel swaps from (H, W, C) to (C, H, W).
+#
+#     Args:
+#         frame (np.array or torch.Tensor): frame array
+#         channel_dim (int): Number of channels to sanity check for
+#         scale (float or None): Value to normalize inputs by
+#
+#     Returns:
+#         processed_frame (torch.Tensor): processed frame
+#     """
+#     assert (frame.shape[-1] == channel_dim)
+#     frame = TU.to_float(frame)
+#     # if scale is not None:
+#     #     frame = frame / scale
+#     #     frame = frame.clip(0.0, 1.0)
+#     frame = batch_image_hwc_to_chw(frame)
+#
+#     if isinstance(frame, np.ndarray):
+#         frame = torch.tensor(frame, dtype=torch.float32)
+#
+#     orig_shape = frame.shape
+#     if len(orig_shape) == 5:
+#         # If the input is a batch of images with 5 dimensions (e.g., [B, T, C, H, W]),
+#         # we need to reshape it to [B*T, C, H, W] for processing
+#         B, T, C, H, W = orig_shape
+#         frame = frame.view(B * T, C, H, W)
+#
+#     # Apply ResNet18 preprocessing
+#     transform = ResNet18_Weights.IMAGENET1K_V1.transforms()
+#     frame = transform(frame)
+#
+#     # revert back to the original shape if it was reshaped
+#     if len(orig_shape) == 5:
+#         # Reshape back to original batch dimensions
+#         frame = frame.view(B, T, C, 224, 224)
+#
+#     return frame
 
 
 def unprocess_obs(obs, obs_modality=None, obs_key=None):

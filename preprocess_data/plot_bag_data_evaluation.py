@@ -261,7 +261,7 @@ def main():
     base_dir = args.record_dir
 
     # Process sim and real environments
-    environments = ["sim", "real"]
+    environments = ["real"]
     summary_data = []
 
     for env in environments:
