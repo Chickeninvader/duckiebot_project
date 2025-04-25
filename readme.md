@@ -8,13 +8,14 @@ This repository contains routines to collect data, train, and test lane-follwing
 
 - Duckiebot running and connected to your network, make sure it is charge to more than 50%
 - DTS (Duckietown Shell) installed
-- ROS environment properly configured
+- ROS environment properly configured (currently use ros noetic. In case you do not have ros installed, for all code require ros (for example data visualization), run ```bash dts start_gui_tools robotname --mount /path/to/duckiebot_project """
+- Install robomimic ```bash pip install robomimic```
 
 ## Instructions (execute this at the directory where the project is)
 
 ### 1. Data collection
 
-# Physical duckiebot: 
+#### Collect bag data from duckiebot: 
 ```bash
 # Build on the robot at dt-core directory
 dts devel build -f
@@ -34,26 +35,34 @@ docker exec -it dts-run-dt-core bash
 
 # launch this data collection when you want to start record data. Press ctrl+C to stop. Data will save at /data/logs/robot_name_date_time.bag at your local computer:
 launcher/record_minimal_logs.sh
+```
 
+#### Visualize data: 
+```bash
+# Visualize a bag file
+cd preprocess_data
+python visualize_bag_data.py /path/to/bag_file
 
 ```
 
-### 2. Model training
+### 2. Training
 ```bash
-# Build locally on your computer
-dts devel build -f
+# Convert data into format that robomimic prefered in hdf5 file
+cd preprocess_data
+python convert_hdf5_with_reward.py
 
-# Copy calibration files from robot to your computer
-sudo scp -r duckie@robotname.local:/data/config/calibration/ /data/config/calibration/
+# Train a model with any config having no_env, since we train offline. Currently train on asu supercomputer with 1 A100 gpu and the memory depend on the algorithms being used
+cd robomimic
+python robomimic/scripts/train.py --config exps/templates/configs_file_no_env.json --dataset ../preprocess_data/record/converted_standard
 ```
 
 ### 3. Testing
 ```bash
-# Build locally on your computer
-dts devel build -f
-
-# Copy calibration files from robot to your computer
-sudo scp -r duckie@robotname.local:/data/config/calibration/ /data/config/calibration/
+# Copy folder contain models and logs to the weights directory inside dt-core/packages/robomimic
+# Move to dt-core and dt-core interactively. (GPU is not required; however, the model is tested with gpu) 
+dts devel run -R robotname  --mount /path/to/dt-core --cmd /bin/bash -- --gpus 1
+# Run the robomimic_control node
+# rosrun robomimic_control robomimic_control.py
 ```
 
 ## Execution Order
