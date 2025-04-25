@@ -83,10 +83,6 @@ rosrun robomimic_control robomimic_control.py
 
 ![FURI Project Poster](poster.png)
 
-**Successful Run Video:**
-
-[Watch a successful run video](successful_run.mp4)
-
 ## Acknowledgements
 
 We would like to express our sincere appreciation to the following for their invaluable support and opportunities that made this project possible:
