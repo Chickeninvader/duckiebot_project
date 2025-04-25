@@ -76,3 +76,22 @@ rosrun robomimic_control robomimic_control.py
 
 - Always maintain the execution order for proper system functionality
 - Monitor system resources during operation
+
+## Visuals
+
+**Project Poster:**
+
+![FURI Project Poster](poster.png)
+
+**Successful Run Video:**
+
+[Watch a successful run video](successful_run.mp4)
+
+## Acknowledgements
+
+We would like to express our sincere appreciation to the following for their invaluable support and opportunities that made this project possible:
+
+* [Dr. Hua Wei and DaRL group at ASU](https://labs.engineering.asu.edu/hw/): For providing the research environment and guidance. 
+* [FURI (Fulton Undergraduate Research Initiative) at ASU](https://furi.engineering.asu.edu/): For the opportunity to conduct undergraduate research.
+* [The Duckietown Team](https://duckietown.com): For developing the Duckiebot platform and providing technical support resources.
+* [The robomimic Team](https://robomimic.github.io): For developing and maintaining the robomimic library, a powerful tool for offline imitation learning.
