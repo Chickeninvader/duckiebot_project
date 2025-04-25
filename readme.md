@@ -19,6 +19,9 @@ This repository contains routines to collect data, train, and test lane-follwing
 # Build on the robot at dt-core directory
 dts devel build -f
 
+# Copy calibration file
+scp -r duckie@robotname.local:/data/config/calibration/ /data/config/calibration/
+
 # Run dt-core interactively
 dts devel run -R robotname  --mount /path/to/dt-core --cmd /bin/bash
 
