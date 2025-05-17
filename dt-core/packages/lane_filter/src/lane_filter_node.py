@@ -6,7 +6,7 @@ import numpy as np
 import rospy
 from cv_bridge import CvBridge
 from duckietown.dtros import DTROS, NodeType, TopicType
-from duckietown_msgs.msg import FSMState, LanePose, SegmentList, Twist2DStamped, Segment
+from duckietown_msgs.msg import FSMState, LanePose, SegmentList, Twist2DStamped
 from lane_filter import LaneFilterHistogram
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
@@ -63,7 +63,6 @@ class LaneFilterNode(DTROS):
         self.t_last_update = rospy.get_time()
         self.currentVelocity = None
 
-        self.fsm_state = None
         self.latencyArray = []
 
         # Subscribers
@@ -149,29 +148,7 @@ class LaneFilterNode(DTROS):
         self.t_last_update = current_time
 
         # Step 2: update
-        if self.fsm_state is "OBSTACLE_AVOIDANCE":
-            switched_segments = []
-            for segment in segment_list_msg.segments:
-                new_segment = Segment()
-                new_segment.pixels_normalized = segment.pixels_normalized
-                new_segment.normal = segment.normal
-                new_segment.points = segment.points
-                if segment.color == Segment.WHITE:
-                    new_segment.color = Segment.YELLOW
-                elif segment.color == Segment.YELLOW:
-                    new_segment.color = Segment.WHITE
-                else:
-                    new_segment.color = segment.color  # keep RED unchanged
-                switched_segments.append(new_segment)
-
-            # Create a new SegmentList with the switched segments
-            switched_list = SegmentList()
-            switched_list.header = segment_list_msg.header
-            switched_list.segments = switched_segments
-
-            self.filter.update(switched_list)
-        else:
-            self.filter.update(segment_list_msg.segments)
+        self.filter.update(segment_list_msg.segments)
 
         # Step 3: build messages and publish things
         [d_max, phi_max] = self.filter.getEstimate()
@@ -232,7 +209,7 @@ class LaneFilterNode(DTROS):
             self.pub_belief_img.publish(belief_img)
 
     def cbMode(self, msg):
-        self.fsm_state = msg.state
+        return  # TODO adjust self.active
 
     def updateVelocity(self, twist_msg):
         self.currentVelocity = twist_msg

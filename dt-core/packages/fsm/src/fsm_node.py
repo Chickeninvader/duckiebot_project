@@ -17,9 +17,10 @@ class FSMNode:
         # Build transition dictionray
         self.states_dict = rospy.get_param("~states", {})
         # Validate state and global transitions
-        if not self._validateStates(self.states_dict):
-            rospy.signal_shutdown(f"[{self.node_name}] Incoherent definition.")
-            return
+        # if not self._validateStates(self.states_dict):
+        #     rospy.signal_shutdown(f"[{self.node_name}] Incoherent definition.")
+        #     return
+        # rospy.loginfo(f"Loaded FSM states: {list(self.states_dict.keys())}")
 
         # Load global transitions
         self.global_transitions_dict = rospy.get_param("~global_transitions", {})
@@ -51,7 +52,7 @@ class FSMNode:
             try:
                 rospy.wait_for_service(
                     service_name, timeout=5.0
-                )  #  Not sure if there is a better way to do this
+                )  # Not sure if there is a better way to do this
                 self.srv_dict[node_name] = rospy.ServiceProxy(service_name, SetBool)
                 rospy.loginfo(f"FSM found service {service_name}self.event_last_trigger_time")
             except rospy.ROSException as e:
@@ -83,6 +84,9 @@ class FSMNode:
             self.sub_list.append(
                 rospy.Subscriber(topic_name, BoolStamped, self.cbEvent, callback_args=event_name)
             )
+
+        rospy.loginfo(f"events: {self.event_trigger_dict}")
+        rospy.loginfo(f"Loaded FSM states: {list(self.states_dict.keys())}")
 
         rospy.loginfo(f"[{self.node_name}] Initialized.")
         # Publish initial state
@@ -116,6 +120,7 @@ class FSMNode:
     def _validateStates(self, states_dict):
         pass_flag = True
         valid_states = list(states_dict.keys())
+        rospy.logwarn(f"valid states: {valid_states}")
         for state, state_dict in list(states_dict.items()):
             # Validate the existence of all reachable states
             transitions_dict = state_dict.get("transitions")
@@ -147,6 +152,10 @@ class FSMNode:
         if next_state is None:
             # No state transition defined, look up global transition
             next_state = self.global_transitions_dict.get(event_name)  # None when no global transitions
+
+        # rospy.loginfo(f"state_dict: {state_dict}")
+        # rospy.loginfo(f"self state: {self.states_dict}")
+        # rospy.loginfo(f"[{self.node_name}] {state_name} -> {event_name} -> {next_state}")
         return next_state
 
     def _getActiveNodesOfState(self, state_name):
@@ -213,22 +222,21 @@ class FSMNode:
             msg.data = lights
             rospy.loginfo(f"{lights} is use")
             # self.changePattern(msg)
-            
+
     def cbEvent(self, msg, event_name):
         if msg.data == self.event_trigger_dict[event_name]:
             # Update timestamp
             self.state_msg.header.stamp = msg.header.stamp
             next_state = self._getNextState(self.state_msg.state, event_name)
             if next_state is not None:
-                rospy.logwarn(f"current state {self.state_msg.state}, event name {event_name}, next_state = {next_state}, count: {self.count_event}")
+                rospy.logwarn(
+                    f"current state {self.state_msg.state}, event name {event_name}, next_state = {next_state}, count: {self.count_event}")
                 self.count_event[next_state] += 1
                 if self.count_event[next_state] >= 4:
                     # Has a defined transition
                     self.state_msg.state = next_state
                     self.publish()
                     self.count_event = defaultdict(int)
-
-
 
     def on_shutdown(self):
         rospy.loginfo(f"[{self.node_name}] Shutting down.")

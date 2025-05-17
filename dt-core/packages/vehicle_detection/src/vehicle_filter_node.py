@@ -153,7 +153,7 @@ class VehicleFilterNode(DTROS):
 
                     obstacle_msg = BoolStamped()
                     obstacle_msg.header = vehicle_centers_msg.header
-                    obstacle_msg.data = distance_to_vehicle <= self.virtual_stop_line_offset.value
+                    obstacle_msg.data = bool(distance_to_vehicle <= self.virtual_stop_line_offset.value)
                     self.pub_obstacle_caused_stop.publish(obstacle_msg)
 
                     if self.pub_visualize.get_num_connections() > 0:

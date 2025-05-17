@@ -96,6 +96,7 @@ class LaneControllerNode(DTROS):
         self.obstacle_stop_line_detected = False
         self.at_obstacle_stop_line = False
         self.switch_lane_timeout = None
+        self.pose_msg = None
 
         self.current_pose_source = "lane_filter"
 
@@ -161,8 +162,11 @@ class LaneControllerNode(DTROS):
         else:
             self.current_pose_source = "lane_filter"
 
-        if self.params["~verbose"] == 2:
-            self.log("Pose source: %s" % self.current_pose_source)
+        # if self.params["~verbose"] == 2:
+        self.log("Pose source: %s" % self.current_pose_source)
+
+        if self.fsm_state == "SWITCH_LANE_LEFT" or self.fsm_state == "SWITCH_LANE_RIGHT":
+            self.switchLane()
 
     def cbAllPoses(self, input_pose_msg, pose_source):
         """Callback receiving pose messages from multiple topics.
@@ -196,6 +200,49 @@ class LaneControllerNode(DTROS):
             car_cmd_msg (:obj:`Twist2DStamped`): Message containing the requested control action.
         """
         self.pub_car_cmd.publish(car_cmd_msg)
+
+    def switchLane(self):
+        if self.fsm_state == "SWITCH_LANE_LEFT":
+            v = 0.5
+            omega = 0.5
+            self.log("SWITCH_LANE_LEFT: Executing lane switch command for 0.5s", 'info')
+
+        elif self.fsm_state == "SWITCH_LANE_RIGHT":
+            v = 0.5
+            omega = -0.5
+            self.log("SWITCH_LANE_RIGHT: Executing lane switch command for 0.5s", 'info')
+
+        else:
+            return  # Do nothing if not in a switch state
+
+        # Publish command with proper header
+        car_control_msg = Twist2DStamped()
+        car_control_msg.header = self.pose_msg.header
+        car_control_msg.v = v * 2
+        car_control_msg.omega = omega
+
+        self.publishCmd(car_control_msg)
+
+        # Sleep for 0.5s while the robot performs the lane switch
+        rospy.sleep(0.5)
+
+        # Publish a stop command
+        stop_msg = Twist2DStamped()
+        stop_msg.header = self.pose_msg.header
+        stop_msg.v = 0.0
+        stop_msg.omega = 0.0
+        self.publishCmd(stop_msg)
+
+        # Publish lane switch complete signal
+        done_msg = BoolStamped()
+        done_msg.header.stamp = rospy.Time.now()
+        done_msg.data = True
+        self.pub_finish_switch_lane.publish(done_msg)
+        self.pub_finish_switch_lane.publish(done_msg)
+        self.pub_finish_switch_lane.publish(done_msg)
+        self.pub_finish_switch_lane.publish(done_msg)
+
+        self.log("Lane switch completed. Robot stopped and done message published.", 'info')
 
     def getControlAction(self, pose_msg):
         """Callback that receives a pose message and updates the related control command.
@@ -253,52 +300,51 @@ class LaneControllerNode(DTROS):
             omega = -pose_msg.phi
 
         elif self.fsm_state == "SWITCH_LANE_LEFT":
-
             if self.switch_lane_timeout is None:
                 self.switch_lane_timeout = rospy.Time.now()
+                self.log("Entered SWITCH_LANE_LEFT state. Starting timeout.", 'info')
 
             elapsed_time = (rospy.Time.now() - self.switch_lane_timeout).to_sec()
+            self.log(f"SWITCH_LANE_LEFT: Elapsed time = {elapsed_time:.2f}s", 'debug')
 
             v = pose_msg.v_ref
-
             omega = 0.5  # turning left
+            self.log(f"SWITCH_LANE_LEFT: Setting omega = {omega}, v_ref = {v}", 'debug')
 
             if elapsed_time >= 0.5:
                 self.switch_lane_timeout = None
+                self.log("SWITCH_LANE_LEFT: Lane switch completed. Publishing finish message.", 'info')
 
                 msg = BoolStamped()
-
                 msg.header.stamp = rospy.Time.now()
-
                 msg.data = True
-
                 self.pub_finish_switch_lane.publish(msg)
 
         elif self.fsm_state == "SWITCH_LANE_RIGHT":
-
             if self.switch_lane_timeout is None:
                 self.switch_lane_timeout = rospy.Time.now()
+                self.log("Entered SWITCH_LANE_RIGHT state. Starting timeout.", 'info')
 
             elapsed_time = (rospy.Time.now() - self.switch_lane_timeout).to_sec()
+            self.log(f"SWITCH_LANE_RIGHT: Elapsed time = {elapsed_time:.2f}s", 'debug')
 
             v = pose_msg.v_ref
-
             omega = -0.5  # turning right
+            self.log(f"SWITCH_LANE_RIGHT: Setting omega = {omega}, v_ref = {v}", 'debug')
 
             if elapsed_time >= 0.5:
                 self.switch_lane_timeout = None
+                self.log("SWITCH_LANE_RIGHT: Lane switch completed. Publishing finish message.", 'info')
 
                 msg = BoolStamped()
-
                 msg.header.stamp = rospy.Time.now()
-
                 msg.data = True
-
                 self.pub_finish_switch_lane.publish(msg)
 
         # Initialize car control msg, add header from input message
         car_control_msg = Twist2DStamped()
         car_control_msg.header = pose_msg.header
+        self.pose_msg = pose_msg
 
         # Add commands to car message
         car_control_msg.v = v * 2
