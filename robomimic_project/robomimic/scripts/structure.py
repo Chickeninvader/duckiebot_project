@@ -27,8 +27,7 @@ def save_hdf5_structure(file_path):
 
 
 # Example usage
-save_hdf5_structure('/duckiebot_project/preprocess_data/record/converted_standard/all_demos_old.hdf5')
-save_hdf5_structure('/duckiebot_project/preprocess_data/record/converted_standard/all_demos_new.hdf5')
+save_hdf5_structure('/home/local/ASURITE/tchen169/Desktop/albert/duckiebot_project/preprocess_data/record/converted_standard/lab__nonhuman_debug.hdf5')
 
 # Example usage
 # print_hdf5_demo_structure('/home/duckie/Desktop/simulation/robomimic/datasets/lift/ph/low_dim_v141.hdf5', demo_name="demo_1")

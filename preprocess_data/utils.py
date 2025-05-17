@@ -13,7 +13,7 @@ def compute_reward(d, phi, velocity, in_lane):
     lambda_ = 100.0  # High penalty for leaving the lane
 
     # Compute reward components
-    r_d = -alpha * math.log(abs(d - d_ref) + 1 - 0.05)  # penalty for lateral offset greater than 0.05
+    r_d = -alpha * math.log(abs(d - d_ref) + 1 - 0.1)  # penalty for lateral offset greater than 0.05
     r_phi = -beta * abs(phi - phi_ref)
     r_v = gamma * velocity  # Reward movement
     r_lane = -lambda_ if not in_lane else 0  # High penalty for being out of lane and encouragement for being in lane

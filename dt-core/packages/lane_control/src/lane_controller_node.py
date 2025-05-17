@@ -262,7 +262,7 @@ class LaneControllerNode(DTROS):
 
         # Add commands to car message
         car_control_msg.v = v * 2
-        car_control_msg.omega = omega
+        car_control_msg.omega = omega # Multiply by 0.5 in sim
 
         self.publishCmd(car_control_msg)
         self.last_s = current_s
