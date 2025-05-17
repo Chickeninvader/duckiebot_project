@@ -77,6 +77,9 @@ class VehicleFilterNode(DTROS):
         self.pub_virtual_stop_line = rospy.Publisher("~virtual_stop_line", StopLineReading, queue_size=1)
         self.pub_visualize = rospy.Publisher("~debug/visualization_marker", Marker, queue_size=1)
         self.pub_stopped_flag = rospy.Publisher("~stopped", BoolStamped, queue_size=1)
+        self.pub_obstacle_caused_stop = rospy.Publisher(
+            "~obstacle_caused_stop", BoolStamped, queue_size=1
+        )
         self.pcm = PinholeCameraModel()
         self.changePattern = rospy.ServiceProxy("~set_pattern", ChangePattern)
         self.log("Initialization completed")
@@ -147,6 +150,11 @@ class VehicleFilterNode(DTROS):
                         at=distance_to_vehicle <= self.virtual_stop_line_offset.value,
                         x=distance_to_vehicle,
                     )
+
+                    obstacle_msg = BoolStamped()
+                    obstacle_msg.header = vehicle_centers_msg.header
+                    obstacle_msg.data = distance_to_vehicle <= self.virtual_stop_line_offset.value
+                    self.pub_obstacle_caused_stop.publish(obstacle_msg)
 
                     if self.pub_visualize.get_num_connections() > 0:
                         marker_msg = Marker()

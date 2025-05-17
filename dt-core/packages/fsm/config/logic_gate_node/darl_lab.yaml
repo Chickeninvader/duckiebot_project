@@ -21,6 +21,26 @@ events:
     msg_type: "BoolStamped"
     trigger: True
 
+  obstacle_caused_stop:
+    topic: "vehicle_detection_node/obstacle_caused_stop"
+    msg_type: "BoolStamped"
+    trigger: True
+
+  obstacle_cleared:
+    topic: "vehicle_detection_node/obstacle_caused_stop"
+    msg_type: "BoolStamped"
+    trigger: False
+
+  obstacle_timeout:
+    topic: "vehicle_detection_node/obstacle_timeout"
+    msg_type: "BoolStamped"
+    trigger: True
+
+  finish_switch_lane:
+    topic: "lane_controller_node/finish_switch_lane"
+    msg_type: "BoolStamped"
+    trigger: True
+
 
 gates:
   intersection_go:
