@@ -5,13 +5,13 @@ import copy
 import os
 import rospy
 from duckietown.dtros import DTROS, NodeType, TopicType
-from duckietown_msgs.msg import ObstacleImageDetectionList, ObstacleImageDetection, Rect
+from duckietown_msgs.msg import ObstacleImageDetectionList, ObstacleImageDetection, Rect, BoolStamped
 from cv_bridge import CvBridge
 from sensor_msgs.msg import CompressedImage
 from nn_model.constants import IMAGE_SIZE
 from nn_model.model import Wrapper
 from solution.integration_activity import NUMBER_FRAMES_SKIPPED, filter_by_classes, filter_by_bboxes, filter_by_scores
-
+from collections import deque
 class ObjectDetectionNode(DTROS):
     def __init__(self, node_name):
         # Initialize the DTROS parent class
@@ -27,6 +27,13 @@ class ObjectDetectionNode(DTROS):
         self.pub_detections_list = rospy.Publisher(
             f"/{self.veh}/lane_controller_node/detection_list",
             ObstacleImageDetectionList,
+            queue_size=1,
+            dt_topic_type=TopicType.DEBUG,
+        )
+
+        self.obstacle_caused_stop = rospy.Publisher(
+            f"/{self.veh}/vehicle_detection_node/obstacle_caused_stop",
+            BoolStamped,
             queue_size=1,
             dt_topic_type=TopicType.DEBUG,
         )
@@ -49,6 +56,7 @@ class ObjectDetectionNode(DTROS):
         self.log("Finished model loading!")
         
         self.frame_id = 0
+        self.detection_buffer = deque(maxlen=5)
         self.initialized = True
         self.log("Initialized!")
 
@@ -179,7 +187,7 @@ class ObjectDetectionNode(DTROS):
                 self.log("\n********************************\n" +
                          f"score: {score}\n" +
                          f"hue: {hue:.1f}\n" +
-                         "\n************************************\n", "error")
+                         "\n************************************\n", "debug")
                 ######################################
                 
                 RED_HUE_RANGE_1 = (0, 30)
@@ -200,16 +208,48 @@ class ObjectDetectionNode(DTROS):
             elif cls == 1 and score >= 0.5:
                 yy1, yy2 = int(bbox[1]), int(bbox[3])
                 xx1, xx2 = int(bbox[0]), int(bbox[2])
-                duckitbot_area = (xx2 - xx1) * (yy2 - yy1)
-                cls = 11 # confident duckiebot detected
-                self.log("\n************************************\n" + 
+                duckiebot_area = (xx2 - xx1) * (yy2 - yy1)
+                cls = 11  # confident duckiebot detected
+
+                # Compute center of bounding box
+                center_x = (xx1 + xx2) // 2
+                center_y = (yy1 + yy2) // 2
+
+                # Define your stop region (e.g., central lower part of the image)
+                REGION_X_MIN = 100
+                REGION_X_MAX = 220
+                REGION_Y_MIN = 160
+                REGION_Y_MAX = 240
+                AREA_THRESHOLD = 3000  # example value
+
+                # Check if bounding box is within stop region and large enough
+                inside_stop_region = (REGION_X_MIN <= center_x <= REGION_X_MAX and
+                                      REGION_Y_MIN <= center_y <= REGION_Y_MAX)
+                is_valid = inside_stop_region and duckiebot_area > AREA_THRESHOLD
+
+                # Add result to buffer
+                self.detection_buffer.append(is_valid)
+
+                # Voting logic: if >= 3 out of 5 are True, then publish stop
+                count_true = sum(self.detection_buffer)
+                should_stop = count_true >= 3
+
+                # Publish decision message
+                msg = BoolStamped()
+                msg.data = should_stop
+                msg.header = image_msg.header
+                self.obstacle_caused_stop.publish(msg)
+
+                # Optional debug log
+                self.log("\n************************************\n" +
                          f"detect duckiebot and confident\n" +
                          f"score: {score}\n" +
-                         f"duckitbot area: {duckitbot_area}" +
-                         "\n************************************\n", "error")
-            ###################################################################
-
-
+                         f"duckiebot area: {duckiebot_area}\n" +
+                         f"center: ({center_x}, {center_y})\n" +
+                         f"inside_stop_region: {inside_stop_region}\n" +
+                         f"is_valid: {is_valid}, buffer: {list(self.detection_buffer)}\n" +
+                         f"stop published: {should_stop}" +
+                         "\n************************************\n", "debug")
             else:
                 self.log(f"detect {names[cls]}")
 

@@ -95,12 +95,16 @@ class LaneControllerNode(DTROS):
         self.obstacle_stop_line_distance = None
         self.obstacle_stop_line_detected = False
         self.at_obstacle_stop_line = False
+        self.switch_lane_timeout = None
 
         self.current_pose_source = "lane_filter"
 
         # Construct publishers
         self.pub_car_cmd = rospy.Publisher(
             "~car_cmd", Twist2DStamped, queue_size=1, dt_topic_type=TopicType.CONTROL
+        )
+        self.pub_finish_switch_lane = rospy.Publisher(
+            "~finish_switch_lane", BoolStamped, queue_size=1
         )
 
         # Construct subscribers
@@ -206,16 +210,13 @@ class LaneControllerNode(DTROS):
         if self.last_s is not None:
             dt = current_s - self.last_s
 
-        # if self.current_pose_source == 'intersection_navigation':
-        #     self.log(f" at stop line {self.at_stop_line}, at obstracle {self.at_obstacle_stop_line}")
-
-        if (self.at_stop_line or self.at_obstacle_stop_line) and (self.current_pose_source == 'lane_filter'):
+        if ((self.at_stop_line or self.at_obstacle_stop_line) and (self.current_pose_source == 'lane_filter')
+                or self.fsm_state == "OBSTACLE_STOP"):
             v = 0
             omega = 0
             
         elif self.current_pose_source == 'lane_filter':
-        # else:
-            
+
             # Compute errors
             d_err = pose_msg.d - self.params["~d_offset"]
             # self.log(f"pose d: {pose_msg.d}, origin offset: {self.params['~d_offset']}, d_err: {d_err}")
@@ -248,13 +249,52 @@ class LaneControllerNode(DTROS):
             omega += self.params["~omega_ff"]
 
         elif self.current_pose_source == 'intersection_navigation':
-            # Fix velocify, get the orientation error from the pose msg
             v = pose_msg.v_ref
             omega = -pose_msg.phi
 
-        # if self.current_pose_source == 'intersection_navigation':
-        #     self.log(f" velocity {v}, orientation {omega}", 'warn')
+        elif self.fsm_state == "SWITCH_LANE_LEFT":
 
+            if self.switch_lane_timeout is None:
+                self.switch_lane_timeout = rospy.Time.now()
+
+            elapsed_time = (rospy.Time.now() - self.switch_lane_timeout).to_sec()
+
+            v = pose_msg.v_ref
+
+            omega = 0.5  # turning left
+
+            if elapsed_time >= 0.5:
+                self.switch_lane_timeout = None
+
+                msg = BoolStamped()
+
+                msg.header.stamp = rospy.Time.now()
+
+                msg.data = True
+
+                self.pub_finish_switch_lane.publish(msg)
+
+        elif self.fsm_state == "SWITCH_LANE_RIGHT":
+
+            if self.switch_lane_timeout is None:
+                self.switch_lane_timeout = rospy.Time.now()
+
+            elapsed_time = (rospy.Time.now() - self.switch_lane_timeout).to_sec()
+
+            v = pose_msg.v_ref
+
+            omega = -0.5  # turning right
+
+            if elapsed_time >= 0.5:
+                self.switch_lane_timeout = None
+
+                msg = BoolStamped()
+
+                msg.header.stamp = rospy.Time.now()
+
+                msg.data = True
+
+                self.pub_finish_switch_lane.publish(msg)
 
         # Initialize car control msg, add header from input message
         car_control_msg = Twist2DStamped()
