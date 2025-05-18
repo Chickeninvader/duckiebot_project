@@ -15,24 +15,34 @@ events:
     topic: "joy_mapper_node/joystick_override"
     msg_type: "BoolStamped"
     trigger: False
-
   intersection_done:  ## closed loop new
     topic: "intersection_navigation_node/intersection_done"
     msg_type: "BoolStamped"
     trigger: True
-
-  obstacle_caused_stop:
-    topic: "vehicle_detection_node/obstacle_caused_stop"
+  vehicle_caused_stop:
+    topic: "vehicle_detection_node/vehicle_caused_stop"
+    msg_type: "BoolStamped"
+    trigger: True
+  pedestrian_caused_stop:
+    topic: "object_detection_node/pedestrian_caused_stop"
     msg_type: "BoolStamped"
     trigger: True
 
-  obstacle_cleared:
-    topic: "vehicle_detection_node/obstacle_caused_stop"
+  vehicle_cleared:
+    topic: "vehicle_detection_node/vehicle_caused_stop"
+    msg_type: "BoolStamped"
+    trigger: False
+  pedestrian_cleared:
+    topic: "object_detection_node/pedestrian_caused_stop"
     msg_type: "BoolStamped"
     trigger: False
 
-  obstacle_timeout:
-    topic: "vehicle_detection_node/obstacle_timeout"
+  vehicle_timeout:
+    topic: "vehicle_detection_node/timeout"
+    msg_type: "BoolStamped"
+    trigger: True
+  pedestrian_timeout:
+    topic: "object_detection_node/timeout"
     msg_type: "BoolStamped"
     trigger: True
 
@@ -49,3 +59,24 @@ gates:
       - intersection_go_implicit
       - intersection_go_explicit
     output_topic: "~intersection_go"
+
+  obstacle_caused_stop:
+    gate_type: OR
+    inputs:
+      - vehicle_caused_stop
+      - pedestrian_caused_stop
+    output_topic: "~obstacle_caused_stop"
+
+  obstacle_cleared:
+    gate_type: AND
+    inputs:
+      - vehicle_cleared
+      - pedestrian_cleared
+    output_topic: "~obstacle_cleared"
+
+  obstacle_timeout:
+    gate_type: OR
+    inputs:
+      - vehicle_timeout
+      - pedestrian_timeout
+    output_topic: "~obstacle_timeout"

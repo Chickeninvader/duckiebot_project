@@ -185,12 +185,12 @@ class LaneFilterHistogram(LaneFilterInterface):
 
         return segmentsArray
 
-    def update(self, segments):
+    def update(self, segments, lane_right=True):
         # prepare the segments for each belief array
         segmentsArray = self.prepareSegments(segments)
         # generate all belief arrays
 
-        measurement_likelihood = self.generate_measurement_likelihood(segmentsArray)
+        measurement_likelihood = self.generate_measurement_likelihood(segmentsArray, lane_right=lane_right)
 
         if measurement_likelihood is not None:
             self.belief = np.multiply(self.belief, measurement_likelihood)
@@ -199,13 +199,13 @@ class LaneFilterHistogram(LaneFilterInterface):
             else:
                 self.belief /= np.sum(self.belief)
 
-    def generate_measurement_likelihood(self, segments):
+    def generate_measurement_likelihood(self, segments, lane_right=True):
 
         # initialize measurement likelihood to all zeros
         measurement_likelihood = np.zeros(self.d.shape)
 
         for segment in segments:
-            d_i, phi_i, l_i, weight = self.generateVote(segment)
+            d_i, phi_i, l_i, weight = self.generateVote(segment =segment, lane_right=lane_right)
 
             # if the vote lands outside of the histogram discard it
             if d_i > self.d_max or d_i < self.d_min or phi_i < self.phi_min or phi_i > self.phi_max:
@@ -238,7 +238,7 @@ class LaneFilterHistogram(LaneFilterInterface):
         return self.belief.max()
 
     # generate a vote for one segment
-    def generateVote(self, segment):
+    def generateVote(self, segment, lane_right=True):
         p1 = np.array([segment.points[0].x, segment.points[0].y])
         p2 = np.array([segment.points[1].x, segment.points[1].y])
         t_hat = (p2 - p1) / np.linalg.norm(p2 - p1)
@@ -256,23 +256,42 @@ class LaneFilterHistogram(LaneFilterInterface):
         l_i = (l1 + l2) / 2
         d_i = (d1 + d2) / 2
         phi_i = np.arcsin(t_hat[1])
-        if segment.color == segment.WHITE:  # right lane is white
-            if p1[0] > p2[0]:  # right edge of white lane
-                d_i -= self.linewidth_white
-            else:  # left edge of white lane
+        # Maintain on right lane
+        if lane_right:
+            if segment.color == segment.WHITE:  # right lane is white
+                if p1[0] > p2[0]:  # right edge of white lane
+                    d_i -= self.linewidth_white
+                else:  # left edge of white lane
 
-                d_i = -d_i
+                    d_i = -d_i
 
-                phi_i = -phi_i
-            d_i -= self.lanewidth / 2
+                    phi_i = -phi_i
+                d_i -= self.lanewidth / 2
 
-        elif segment.color == segment.YELLOW:  # left lane is yellow
-            if p2[0] > p1[0]:  # left edge of yellow lane
-                d_i -= self.linewidth_yellow
-                phi_i = -phi_i
-            else:  # right edge of white lane
-                d_i = -d_i
-            d_i = self.lanewidth / 2 - d_i
+            elif segment.color == segment.YELLOW:  # left lane is yellow
+                if p2[0] > p1[0]:  # left edge of yellow lane
+                    d_i -= self.linewidth_yellow
+                    phi_i = -phi_i
+                else:  # right edge of white lane
+                    d_i = -d_i
+                d_i = self.lanewidth / 2 - d_i
+        else:  # Maintain on left lane
+            if segment.color == segment.WHITE:  # white segment is now on left
+                if p1[0] > p2[0]:  # right edge of white lane
+                    d_i -= self.linewidth_white
+                else:  # left edge of white lane
+                    d_i = -d_i
+                    phi_i = -phi_i
+                d_i = -self.lanewidth / 2 - d_i  # Changed sign to place bot between yellow and left white
+
+            elif segment.color == segment.YELLOW:  # yellow segment in middle
+                if p2[0] > p1[0]:  # left edge of yellow lane
+                    d_i -= self.linewidth_yellow
+                    phi_i = -phi_i
+                else:  # right edge of yellow lane
+                    d_i = -d_i
+                d_i = -self.lanewidth / 2 - d_i  # Changed to place bot between yellow and left white
+
 
         # weight = distance
         weight = 1

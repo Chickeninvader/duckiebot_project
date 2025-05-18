@@ -62,6 +62,7 @@ class LaneFilterNode(DTROS):
 
         self.t_last_update = rospy.get_time()
         self.currentVelocity = None
+        self.fsm_state = None
 
         self.latencyArray = []
 
@@ -148,7 +149,7 @@ class LaneFilterNode(DTROS):
         self.t_last_update = current_time
 
         # Step 2: update
-        self.filter.update(segment_list_msg.segments)
+        self.filter.update(segment_list_msg.segments, lane_right=bool(self.fsm_state != 'OBSTACLE_AVOIDANCE'))
 
         # Step 3: build messages and publish things
         [d_max, phi_max] = self.filter.getEstimate()
@@ -209,7 +210,7 @@ class LaneFilterNode(DTROS):
             self.pub_belief_img.publish(belief_img)
 
     def cbMode(self, msg):
-        return  # TODO adjust self.active
+        self.fsm_state = msg.state  # String of current FSM state
 
     def updateVelocity(self, twist_msg):
         self.currentVelocity = twist_msg

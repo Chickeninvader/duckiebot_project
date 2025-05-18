@@ -12,6 +12,7 @@ from image_geometry import PinholeCameraModel
 from sensor_msgs.msg import CameraInfo
 from std_msgs.msg import String
 from visualization_msgs.msg import Marker
+from collections import deque
 
 
 class VehicleFilterNode(DTROS):
@@ -77,9 +78,14 @@ class VehicleFilterNode(DTROS):
         self.pub_virtual_stop_line = rospy.Publisher("~virtual_stop_line", StopLineReading, queue_size=1)
         self.pub_visualize = rospy.Publisher("~debug/visualization_marker", Marker, queue_size=1)
         self.pub_stopped_flag = rospy.Publisher("~stopped", BoolStamped, queue_size=1)
-        self.pub_obstacle_caused_stop = rospy.Publisher(
-            "~obstacle_caused_stop", BoolStamped, queue_size=1
+        self.pub_vehicle_caused_stop = rospy.Publisher(
+            "~vehicle_caused_stop", BoolStamped, queue_size=1
         )
+        self.pub_vehicle_timeout = rospy.Publisher(
+            "~timeout", BoolStamped, queue_size=1
+        )
+        self.vehicle_detection_buffer = deque(maxlen=3)
+        self.vehicle_stop_start_time = None
         self.pcm = PinholeCameraModel()
         self.changePattern = rospy.ServiceProxy("~set_pattern", ChangePattern)
         self.log("Initialization completed")
@@ -142,6 +148,7 @@ class VehicleFilterNode(DTROS):
                     R_inv = np.transpose(R)
                     translation_vector = -np.dot(R_inv, translation_vector)
                     distance_to_vehicle = -translation_vector[2]
+                    is_near = bool(distance_to_vehicle <= self.virtual_stop_line_offset.value)
 
                     # make the message and publish
                     self.publish_stop_line_msg(
@@ -150,11 +157,41 @@ class VehicleFilterNode(DTROS):
                         at=distance_to_vehicle <= self.virtual_stop_line_offset.value,
                         x=distance_to_vehicle,
                     )
+                    distance_to_vehicle = float(distance_to_vehicle)
 
-                    obstacle_msg = BoolStamped()
-                    obstacle_msg.header = vehicle_centers_msg.header
-                    obstacle_msg.data = bool(distance_to_vehicle <= self.virtual_stop_line_offset.value)
-                    self.pub_obstacle_caused_stop.publish(obstacle_msg)
+                    # self.log(f"[VEH DETECT] Valid | Distance = {distance_to_vehicle:.2f}, Near = {is_near}")
+                    self.vehicle_detection_buffer.append(is_near)
+
+                    # Voting
+                    count_true = sum(self.vehicle_detection_buffer)
+                    vehicle_should_stop = count_true >= 2
+                    # self.log(f"[VEH BUFFER] {list(self.vehicle_detection_buffer)}")
+                    # self.log(f"[VEH VOTE] True count = {count_true} => STOP = {vehicle_should_stop}")
+
+                    # Publish decision
+                    vehicle_stop_msg = BoolStamped()
+                    vehicle_stop_msg.header = vehicle_centers_msg.header
+                    vehicle_stop_msg.data = vehicle_should_stop
+                    self.pub_vehicle_caused_stop.publish(vehicle_stop_msg)
+
+                    current_time = rospy.Time.now()
+                    # Timeout
+                    if vehicle_should_stop:
+                        if self.vehicle_stop_start_time is None:
+                            self.vehicle_stop_start_time = current_time
+                            # self.log("[VEH TIMEOUT] Timer started")
+                        else:
+                            duration = (current_time - self.vehicle_stop_start_time).to_sec()
+                            # self.log(f"[VEH TIMEOUT] Duration = {duration:.2f}s")
+                            if duration >= 5.0:
+                                timeout_msg = BoolStamped()
+                                timeout_msg.header = vehicle_centers_msg.header
+                                timeout_msg.data = True
+                                for _ in range(4):
+                                    self.pub_vehicle_timeout.publish(timeout_msg)
+                                # self.log("[VEH TIMEOUT] Triggered after 5s")
+                    else:
+                        self.vehicle_stop_start_time = None
 
                     if self.pub_visualize.get_num_connections() > 0:
                         marker_msg = Marker()
@@ -195,6 +232,9 @@ class VehicleFilterNode(DTROS):
         else:
             # publish empty messages
             self.publish_stop_line_msg(header=vehicle_centers_msg.header)
+
+            self.vehicle_detection_buffer.append(False)
+            self.pub_vehicle_caused_stop.publish(BoolStamped(header=vehicle_centers_msg.header, data=False))
 
             if self.pub_visualize.get_num_connections() > 0:
                 marker_msg = Marker()
