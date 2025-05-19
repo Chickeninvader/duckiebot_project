@@ -39,6 +39,10 @@ events: # Maps from subscribing topic to signal ids
     topic: "logic_gate_node/obstacle_timeout"
     msg_type: "BoolStamped"
     trigger: True
+  finish_obstacle_avoidance:
+    topic: "lane_controller_node/finish_obstacle_avoidance"
+    msg_type: "BoolStamped"
+    trigger: True
 
 # Define nodes
 nodes:
@@ -154,7 +158,7 @@ states:
 
   OBSTACLE_AVOIDANCE:
     transitions:
-      obstacle_timeout: "SWITCH_LANE_RIGHT"
+      finish_obstacle_avoidance: "SWITCH_LANE_RIGHT"
     active_nodes:
       - anti_instagram
       - decoder_node
