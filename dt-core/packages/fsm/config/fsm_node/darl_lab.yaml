@@ -143,7 +143,7 @@ states:
 
   SWITCH_LANE_LEFT:
     transitions:
-      finish_switch_lane: "OBSTACLE_AVOIDANCE"
+      finish_switch_lane: "INTERSECTION_COORDINATION"
     active_nodes:
       - anti_instagram
       - decoder_node
@@ -168,17 +168,17 @@ states:
     lights: [ "coordination" ]
     current_status: "in_progress"
 
-    SWITCH_LANE_RIGHT:
-      transitions:
-        finish_switch_lane: "LANE_FOLLOWING"
-      active_nodes:
-        - anti_instagram
-        - decoder_node
-        - line_detector_node
-        - lane_filter_node
-        - lane_controller_node
-      lights: [ "coordination" ]
-      current_status: "in_progress"
+  SWITCH_LANE_RIGHT:
+    transitions:
+      finish_switch_lane: "INTERSECTION_COORDINATION"
+    active_nodes:
+      - anti_instagram
+      - decoder_node
+      - line_detector_node
+      - lane_filter_node
+      - lane_controller_node
+    lights: [ "coordination" ]
+    current_status: "in_progress"
 
 #
 #global_transitions:

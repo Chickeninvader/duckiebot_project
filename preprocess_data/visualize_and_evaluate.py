@@ -10,7 +10,7 @@ from robomimic.utils import file_utils as FileUtils
 from robomimic.utils import torch_utils as TorchUtils
 
 # Configuration
-bag_file = "record/lab_record/human_control_light_50/chicinvabot_2025-03-12-18-50-27.bag"
+bag_file = "old_record/lab_record/human_control_light_50/chicinvabot_2025-03-12-18-50-27.bag"
 
 # Define the folder containing all base paths
 base_folder = "../robomimic_project/bc_trained_models"

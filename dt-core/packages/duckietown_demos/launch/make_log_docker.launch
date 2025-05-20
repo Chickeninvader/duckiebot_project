@@ -16,6 +16,8 @@
     /$(arg veh)/velocity_to_pose_node/pose
     /$(arg veh)/ground_projection_node/lineseglist_out
     /$(arg veh)/lane_filter_node/lane_pose
+    /$(arg veh)/ground_projection_node/debug/ground_projection_image/compressed
+
   "/>
 
   <!-- Specify the output path for rosbag logs -->

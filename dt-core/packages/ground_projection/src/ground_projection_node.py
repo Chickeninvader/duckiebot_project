@@ -240,84 +240,85 @@ class GroundProjectionNode(DTROS):
         # the origin is at x=200 and y=300
 
         # if that's the first call, generate the background
-        if self.debug_img_bg is None:
-
-            # initialize gray image
-            self.debug_img_bg = np.ones((400, 400, 3), np.uint8) * 128
-
-            # draw vertical lines of the grid
-            for vline in np.arange(40, 361, 40):
-                cv2.line(
-                    self.debug_img_bg, pt1=(vline, 20), pt2=(vline, 300), color=(255, 255, 0), thickness=1
-                )
-
-            # draw the coordinates
-            cv2.putText(
-                self.debug_img_bg,
-                "-20cm",
-                (120 - 25, 300 + 15),
-                cv2.FONT_HERSHEY_PLAIN,
-                0.8,
-                (255, 255, 0),
-                1,
-            )
-            cv2.putText(
-                self.debug_img_bg,
-                "  0cm",
-                (200 - 25, 300 + 15),
-                cv2.FONT_HERSHEY_PLAIN,
-                0.8,
-                (255, 255, 0),
-                1,
-            )
-            cv2.putText(
-                self.debug_img_bg,
-                "+20cm",
-                (280 - 25, 300 + 15),
-                cv2.FONT_HERSHEY_PLAIN,
-                0.8,
-                (255, 255, 0),
-                1,
-            )
-
-            # draw horizontal lines of the grid
-            for hline in np.arange(20, 301, 40):
-                cv2.line(
-                    self.debug_img_bg, pt1=(40, hline), pt2=(360, hline), color=(255, 255, 0), thickness=1
-                )
-
-            # draw the coordinates
-            cv2.putText(
-                self.debug_img_bg, "20cm", (2, 220 + 3), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 0), 1
-            )
-            cv2.putText(
-                self.debug_img_bg, " 0cm", (2, 300 + 3), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 0), 1
-            )
-
-            # draw robot marker at the center
-            cv2.line(
-                self.debug_img_bg,
-                pt1=(200 + 0, 300 - 20),
-                pt2=(200 + 0, 300 + 0),
-                color=(255, 0, 0),
-                thickness=1,
-            )
-
-            cv2.line(
-                self.debug_img_bg,
-                pt1=(200 + 20, 300 - 20),
-                pt2=(200 + 0, 300 + 0),
-                color=(255, 0, 0),
-                thickness=1,
-            )
-
-            cv2.line(
-                self.debug_img_bg,
-                pt1=(200 - 20, 300 - 20),
-                pt2=(200 + 0, 300 + 0),
-                color=(255, 0, 0),
-                thickness=1,
-            )
+        self.debug_img_bg = np.ones((400, 400, 3), np.uint8) * 128
+        # if self.debug_img_bg is None:
+        #
+        #     # initialize gray image
+        #     self.debug_img_bg = np.ones((400, 400, 3), np.uint8) * 128
+        #
+        #     # draw vertical lines of the grid
+        #     for vline in np.arange(40, 361, 40):
+        #         cv2.line(
+        #             self.debug_img_bg, pt1=(vline, 20), pt2=(vline, 300), color=(255, 255, 0), thickness=1
+        #         )
+        #
+        #     # draw the coordinates
+        #     cv2.putText(
+        #         self.debug_img_bg,
+        #         "-20cm",
+        #         (120 - 25, 300 + 15),
+        #         cv2.FONT_HERSHEY_PLAIN,
+        #         0.8,
+        #         (255, 255, 0),
+        #         1,
+        #     )
+        #     cv2.putText(
+        #         self.debug_img_bg,
+        #         "  0cm",
+        #         (200 - 25, 300 + 15),
+        #         cv2.FONT_HERSHEY_PLAIN,
+        #         0.8,
+        #         (255, 255, 0),
+        #         1,
+        #     )
+        #     cv2.putText(
+        #         self.debug_img_bg,
+        #         "+20cm",
+        #         (280 - 25, 300 + 15),
+        #         cv2.FONT_HERSHEY_PLAIN,
+        #         0.8,
+        #         (255, 255, 0),
+        #         1,
+        #     )
+        #
+        #     # draw horizontal lines of the grid
+        #     for hline in np.arange(20, 301, 40):
+        #         cv2.line(
+        #             self.debug_img_bg, pt1=(40, hline), pt2=(360, hline), color=(255, 255, 0), thickness=1
+        #         )
+        #
+        #     # draw the coordinates
+        #     cv2.putText(
+        #         self.debug_img_bg, "20cm", (2, 220 + 3), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 0), 1
+        #     )
+        #     cv2.putText(
+        #         self.debug_img_bg, " 0cm", (2, 300 + 3), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 0), 1
+        #     )
+        #
+        #     # draw robot marker at the center
+        #     cv2.line(
+        #         self.debug_img_bg,
+        #         pt1=(200 + 0, 300 - 20),
+        #         pt2=(200 + 0, 300 + 0),
+        #         color=(255, 0, 0),
+        #         thickness=1,
+        #     )
+        #
+        #     cv2.line(
+        #         self.debug_img_bg,
+        #         pt1=(200 + 20, 300 - 20),
+        #         pt2=(200 + 0, 300 + 0),
+        #         color=(255, 0, 0),
+        #         thickness=1,
+        #     )
+        #
+        #     cv2.line(
+        #         self.debug_img_bg,
+        #         pt1=(200 - 20, 300 - 20),
+        #         pt2=(200 + 0, 300 + 0),
+        #         color=(255, 0, 0),
+        #         thickness=1,
+        #     )
 
         # map segment color variables to BGR colors
         color_map = {Segment.WHITE: (255, 255, 255), Segment.RED: (0, 0, 255), Segment.YELLOW: (0, 255, 255)}

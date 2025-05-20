@@ -148,7 +148,7 @@ class VehicleFilterNode(DTROS):
                     R_inv = np.transpose(R)
                     translation_vector = -np.dot(R_inv, translation_vector)
                     distance_to_vehicle = -translation_vector[2]
-                    is_near = bool(distance_to_vehicle <= self.virtual_stop_line_offset.value)
+                    is_near = bool(distance_to_vehicle <= 0.8)
 
                     # make the message and publish
                     self.publish_stop_line_msg(
@@ -159,12 +159,12 @@ class VehicleFilterNode(DTROS):
                     )
                     distance_to_vehicle = float(distance_to_vehicle)
 
-                    # self.log(f"[VEH DETECT] Valid | Distance = {distance_to_vehicle:.2f}, Near = {is_near}")
+                    self.log(f"[VEH DETECT] Valid | Distance = {distance_to_vehicle:.2f}, Near = {is_near}")
                     self.vehicle_detection_buffer.append(is_near)
 
                     # Voting
                     count_true = sum(self.vehicle_detection_buffer)
-                    vehicle_should_stop = count_true >= 2
+                    vehicle_should_stop = count_true >= 1 or is_near
                     # self.log(f"[VEH BUFFER] {list(self.vehicle_detection_buffer)}")
                     # self.log(f"[VEH VOTE] True count = {count_true} => STOP = {vehicle_should_stop}")
 
@@ -172,7 +172,13 @@ class VehicleFilterNode(DTROS):
                     vehicle_stop_msg = BoolStamped()
                     vehicle_stop_msg.header = vehicle_centers_msg.header
                     vehicle_stop_msg.data = vehicle_should_stop
-                    self.pub_vehicle_caused_stop.publish(vehicle_stop_msg)
+                    if vehicle_should_stop:
+                        self.pub_vehicle_caused_stop.publish(vehicle_stop_msg)
+                        self.pub_vehicle_caused_stop.publish(vehicle_stop_msg)
+                        self.pub_vehicle_caused_stop.publish(vehicle_stop_msg)
+                        self.pub_vehicle_caused_stop.publish(vehicle_stop_msg)
+                    else:
+                        self.pub_vehicle_caused_stop.publish(vehicle_stop_msg)
 
                     current_time = rospy.Time.now()
                     # Timeout

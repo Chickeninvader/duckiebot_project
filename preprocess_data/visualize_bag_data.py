@@ -1,5 +1,4 @@
-from time import sleep
-
+from time import sleep # Kept for potential future use, though not actively used for delay
 import cv2
 import rosbag
 import numpy as np
@@ -7,637 +6,285 @@ from cv_bridge import CvBridge
 from collections import deque
 import os
 import argparse
-from utils import compute_reward, compute_reward_fuel
 
+# Assume utils.py and compute_reward are in the same directory or accessible
+from utils import compute_reward
 
-def process_bag_file(bag_path, output_video=None, display=True, env_type="real"):
-    """Process a bag file, display video with data, and optionally save to a file"""
-    # Determine bot name based on environment type
+def process_bag_file(bag_path, output_video=None, display=True, env_type="real",
+                     display_source_topic_name="camera", show_fsm_state=True):
+    """Process a bag file, display video with data, and optionally save to a file. Simplified version."""
+
     bot_name = "chicinvabot" if env_type == "real" else "vchicinvabot"
 
-    # Define topics with bot name
-    image_topic = f"/{bot_name}/camera_node/image/compressed"
+    camera_image_topic = f"/{bot_name}/camera_node/image/compressed"
+    ground_projection_topic = f"/{bot_name}/ground_projection_node/debug/ground_projection_image/compressed"
     data_topic = f"/{bot_name}/car_cmd_switch_node/cmd"
     accept_topic = f"/{bot_name}/car_cmd_switch_node/cmd_executed"
     lane_pose_topic = f"/{bot_name}/lane_filter_node/lane_pose"
+    state_topic = f"/{bot_name}/fsm_node/mode"
 
-    print(f"Processing {bag_path} with bot name: {bot_name}")
-    print(f"Using topics: \n  {image_topic}\n  {data_topic}\n  {accept_topic}\n  {lane_pose_topic}")
+    if display_source_topic_name == "camera":
+        image_topic_to_display = camera_image_topic
+    elif display_source_topic_name == "ground_projection":
+        image_topic_to_display = ground_projection_topic
+    else: # Default to camera if invalid source provided
+        image_topic_to_display = camera_image_topic
 
-    # Open bag file
-    bag = rosbag.Bag(bag_path)
+    topics_to_read = [image_topic_to_display, data_topic, accept_topic, lane_pose_topic]
+    if show_fsm_state:
+        topics_to_read.append(state_topic)
+
+    bag = rosbag.Bag(bag_path) # Assume bag_path is valid and bag is readable
     bridge = CvBridge()
 
-    # Buffers for synchronizing messages
     data_buffer = deque(maxlen=20)
     accept_buffer = deque(maxlen=20)
     lane_pose_buffer = deque(maxlen=20)
+    state_buffer = deque(maxlen=10)
 
-    # Create output video writer if requested
     video_writer = None
-
-    # Track frames for reward history
     reward_history = deque(maxlen=100)
-    time_history = deque(maxlen=100)
-    lane_d_history = deque(maxlen=100)
-    lane_phi_history = deque(maxlen=100)
 
-    # Get all timestamps from the bag to calculate progress
-    total_timestamps = []
-    for _, _, t in bag.read_messages():
-        total_timestamps.append(t.to_sec())
+    # Assume messages exist for timestamp calculation
+    # This will raise ValueError if topics_to_read leads to no messages, per simplification.
+    total_timestamps = [t.to_sec() for _, _, t in bag.read_messages(topics=topics_to_read)]
+    if not total_timestamps: # Minimal check to prevent crash on min/max with empty list
+        bag.close()
+        return 0
 
-    start_time = min(total_timestamps) if total_timestamps else 0
-    end_time = max(total_timestamps) if total_timestamps else 0
-    duration = end_time - start_time
 
-    # Setup CSV for data logging
-    csv_filename = os.path.splitext(bag_path)[0] + "_analysis.csv"
-    csv_file = open(csv_filename, 'w')
-    csv_file.write("timestamp,cmd_v,cmd_omega,executed_v,executed_omega,lane_d,lane_phi,in_lane,reward\n")
+    start_time = min(total_timestamps)
+    end_time = max(total_timestamps)
+    # duration = end_time - start_time # Not explicitly used after this simplification
 
-    # First pass to get video dimensions
     frame_shape = None
-    for topic, msg, _ in bag.read_messages(topics=[image_topic]):
-        if topic == image_topic:
-            frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+    # Assume the display topic has at least one message and it's a decodable image
+    for topic, msg, _ in bag.read_messages(topics=[image_topic_to_display]): # Only read this topic for shape
+        if topic == image_topic_to_display:
+            if msg._type == "sensor_msgs/Image":
+                frame = bridge.imgmsg_to_cv2(msg, "bgr8")
+            elif msg._type == "sensor_msgs/CompressedImage":
+                frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+            else:
+                # Assuming valid image type, so this branch ideally isn't hit
+                continue
             frame_shape = frame.shape
             break
 
-    # Setup video writer if dimensions are found
+    # "Assume everything is there" implies frame_shape will be set.
+    # If not, VideoWriter might fail or use default/no dimensions.
+
     if output_video and frame_shape:
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         video_writer = cv2.VideoWriter(output_video, fourcc, 30.0,
                                        (frame_shape[1], frame_shape[0]))
 
-    # Read messages
-    current_progress = 0
     frames_processed = 0
+    temp_not_in_lane_count = 0
+    latest_fsm_state = "N/A" # Default FSM state
 
-    # counter for not in lane
-    temp_not_in_lane = 0
-
-    for topic, msg, t in bag.read_messages(topics=[image_topic, data_topic, accept_topic, lane_pose_topic]):
-        sleep(0.01)  # Small delay to allow for processing
+    for topic, msg, t in bag.read_messages(topics=topics_to_read):
         timestamp = t.to_sec()
-        progress = int(((timestamp - start_time) / duration) * 100) if duration > 0 else 0
-
-        if progress > current_progress:
-            current_progress = progress
-            print(f"Progress: {current_progress}%")
 
         if topic == data_topic:
             data_buffer.append((timestamp, msg))
-
         elif topic == accept_topic:
             accept_buffer.append((timestamp, msg))
-
         elif topic == lane_pose_topic:
             lane_pose_buffer.append((timestamp, msg))
+        elif topic == state_topic and show_fsm_state:
+            # Assuming msg.data for std_msgs/String or similar
+            latest_fsm_state = msg.state
+            state_buffer.append((timestamp, latest_fsm_state))
 
-            # Check if lane departure occurred
-            try:
-                in_lane = msg.in_lane
-            except AttributeError:
-                in_lane = abs(msg.d) < 0.3
-
-            if not in_lane:
-                print(f"Lane departure detected at timestamp {timestamp:.3f}")
-
-        elif topic == image_topic:
+        elif topic == image_topic_to_display:
             frames_processed += 1
-            frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+            if msg._type == "sensor_msgs/Image":
+                frame = bridge.imgmsg_to_cv2(msg, "bgr8")
+            elif msg._type == "sensor_msgs/CompressedImage":
+                frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+            else:
+                continue # Skip if not a recognized image type
 
-            # Find closest velocity message
-            current_velocity = 0.0
-            cmd_omega = 0.0
+            current_fsm_state_display = "N/A"
+            if show_fsm_state and state_buffer:
+                # The last element in the buffer is the latest received state
+                latest_time_state, latest_msg_state = state_buffer[-1]
+                current_fsm_state_display = latest_msg_state
+            elif show_fsm_state and latest_fsm_state: # If buffer is empty but we have a latest state
+                current_fsm_state_display = latest_fsm_state
+
+            current_cmd_v = 0.0
+            current_cmd_omega = 0.0
             if data_buffer:
-                closest_time, closest_msg = min(data_buffer, key=lambda x: abs(x[0] - timestamp))
-                time_diff = abs(closest_time - timestamp)
-                if time_diff < 0.1:  # Only use if within 100ms
-                    current_velocity = closest_msg.v
-                    cmd_omega = closest_msg.omega
+                closest_time_data, closest_msg_data = min(data_buffer, key=lambda x: abs(x[0] - timestamp))
+                if abs(closest_time_data - timestamp) < 0.1:
+                    current_cmd_v = closest_msg_data.v
+                    current_cmd_omega = closest_msg_data.omega
 
-            # Find closest executed velocity message
             executed_v = 0.0
             executed_omega = 0.0
             if accept_buffer:
-                closest_time, closest_msg = min(accept_buffer, key=lambda x: abs(x[0] - timestamp))
-                time_diff = abs(closest_time - timestamp)
-                if time_diff < 0.1:  # Only use if within 100ms
-                    executed_v = closest_msg.v
-                    executed_omega = closest_msg.omega
+                closest_time_accept, closest_msg_accept = min(accept_buffer, key=lambda x: abs(x[0] - timestamp))
+                if abs(closest_time_accept - timestamp) < 0.1:
+                    executed_v = closest_msg_accept.v
+                    executed_omega = closest_msg_accept.omega
 
-            # Find closest LanePose message
             lane_d = 0.0
             lane_phi = 0.0
-            in_lane = True
+            in_lane = True # Default
             current_reward = None
 
             if lane_pose_buffer:
-                closest_time, closest_lane_msg = min(lane_pose_buffer, key=lambda x: abs(x[0] - timestamp))
-                time_diff = abs(closest_time - timestamp)
-
-                if time_diff < 0.1:  # Only use if within 100ms
+                closest_time_lane, closest_lane_msg = min(lane_pose_buffer, key=lambda x: abs(x[0] - timestamp))
+                if abs(closest_time_lane - timestamp) < 0.1:
                     lane_d = closest_lane_msg.d
                     lane_phi = closest_lane_msg.phi
 
-                    # Extract in_lane status
-                    try:
-                        in_lane = closest_lane_msg.in_lane
-                        temp_not_in_lane = temp_not_in_lane + 1 if not in_lane else temp_not_in_lane
-
-                    except AttributeError:
+                    # Simplified in_lane logic based on assumption of attribute presence or fallback
+                    in_lane_attr = getattr(closest_lane_msg, 'in_lane', abs(lane_d) < 0.3) # Default to calc if attr missing
+                    if isinstance(in_lane_attr, (bool, np.bool_)):
+                        in_lane = in_lane_attr
+                    elif hasattr(in_lane_attr, 'data') and isinstance(in_lane_attr.data, bool): # For std_msgs/Bool like
+                         in_lane = in_lane_attr.data
+                    else: # Fallback if it's not a direct boolean or wrapped boolean
                         in_lane = abs(lane_d) < 0.3
 
-                    # Calculate reward using the provided function
-                    current_reward = compute_reward(lane_d, lane_phi, current_velocity, temp_not_in_lane < 3)
 
-                    # Update histories
+                    if not in_lane:
+                        temp_not_in_lane_count += 1
+                    else:
+                        temp_not_in_lane_count = 0
+
+                    current_reward = compute_reward(lane_d, lane_phi, current_cmd_v, temp_not_in_lane_count < 3)
                     reward_history.append(current_reward)
-                    time_history.append(timestamp - start_time)
-                    lane_d_history.append(lane_d)
-                    lane_phi_history.append(lane_phi)
 
-            # Write to CSV
-            csv_file.write(f"{timestamp},{current_velocity},{cmd_omega},{executed_v},{executed_omega},"
-                           f"{lane_d},{lane_phi},{1 if in_lane else 0},{current_reward if current_reward is not None else ''}\n")
-
-            # Create a clean copy of the frame for visualization
             display_frame = frame.copy()
+            text_area_height = 120
+            if show_fsm_state:
+                text_area_height += 20
 
-            # Add a semi-transparent overlay at the top for text
             overlay = display_frame.copy()
-            cv2.rectangle(overlay, (0, 0), (display_frame.shape[1], 120), (0, 0, 0), -1)
+            cv2.rectangle(overlay, (0, 0), (display_frame.shape[1], text_area_height), (0, 0, 0), -1)
             cv2.addWeighted(overlay, 0.7, display_frame, 0.3, 0, display_frame)
 
-            # Add timestamp and frame number
-            cv2.putText(display_frame, f"Time: {timestamp - start_time:.2f}s  Frame: {frames_processed}",
-                        (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            current_y_offset = 20
+            if show_fsm_state:
+                fsm_text = f"FSM State: {current_fsm_state_display}"
+                cv2.putText(display_frame, fsm_text, (10, current_y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 255), 1)
+                current_y_offset += 25
 
-            # Add velocity commands
-            velocity_text = f"Commanded: v={current_velocity:.3f} omega={cmd_omega:.3f}"
-            cv2.putText(display_frame, velocity_text, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-
-            # Add executed velocity
-            executed_text = f"Executed: v={executed_v:.3f} omega={executed_omega:.3f}"
-            cv2.putText(display_frame, executed_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
-
-            # Add lane pose data
-            lane_text = f"Lane: d={lane_d:.3f} phi={lane_phi:.3f} In Lane: {'Yes' if in_lane else 'No'}"
-            lane_color = (0, 255, 0) if in_lane else (0, 0, 255)  # Green if in lane, red if not
-            cv2.putText(display_frame, lane_text, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, lane_color, 1)
-
-            # Add reward
+            cv2.putText(display_frame, f"T: {timestamp - start_time:.2f}s Fr: {frames_processed}",
+                        (10, current_y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            current_y_offset += 20
+            cv2.putText(display_frame, f"Cmd: v={current_cmd_v:.3f} w={current_cmd_omega:.3f}", (10, current_y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            current_y_offset += 20
+            cv2.putText(display_frame, f"Exe: v={executed_v:.3f} w={executed_omega:.3f}", (10, current_y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+            current_y_offset += 20
+            lane_text = f"Lane: d={lane_d:.3f} p={lane_phi:.3f} In: {'Y' if in_lane else 'N'}" # Shortened labels
+            lane_color = (0, 255, 0) if in_lane else (0, 0, 255)
+            cv2.putText(display_frame, lane_text, (10, current_y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, lane_color, 1)
+            current_y_offset += 20
             if current_reward is not None:
-                reward_text = f"Reward: {current_reward:.3f}"
-                cv2.putText(display_frame, reward_text, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
+                cv2.putText(display_frame, f"Rwd: {current_reward:.3f}", (10, current_y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
 
-            # Draw reward graph in bottom right corner if we have history
             if reward_history:
-                graph_width = 200
-                graph_height = 100
+                graph_width = 200; graph_height = 100
                 graph_x = display_frame.shape[1] - graph_width - 10
                 graph_y = display_frame.shape[0] - graph_height - 10
+                cv2.rectangle(display_frame, (graph_x, graph_y), (graph_x + graph_width, graph_y + graph_height), (50, 50, 50), -1)
+                cv2.rectangle(display_frame, (graph_x, graph_y), (graph_x + graph_width, graph_y + graph_height), (200, 200, 200), 1)
 
-                # Draw graph background
-                cv2.rectangle(display_frame, (graph_x, graph_y),
-                              (graph_x + graph_width, graph_y + graph_height), (0, 0, 0), -1)
-                cv2.rectangle(display_frame, (graph_x, graph_y),
-                              (graph_x + graph_width, graph_y + graph_height), (255, 255, 255), 1)
+                reward_min_val = min(reward_history) # Assumes reward_history is not empty here
+                reward_max_val = max(reward_history)
+                reward_range = max(0.1, reward_max_val - reward_min_val)
 
-                # Draw rewards
-                reward_min = min(reward_history) if reward_history else -2
-                reward_max = max(reward_history) if reward_history else 2
-                reward_range = max(0.1, reward_max - reward_min)  # Avoid division by zero
+                points = []
+                for i_rh, rh_val in enumerate(reward_history):
+                    # Ensure division by non-zero for norm_x when len(reward_history) is 1
+                    denominator_x = max(1, len(reward_history) -1) if len(reward_history) > 1 else 1
+                    norm_x = int(graph_x + (i_rh / denominator_x) * graph_width)
+                    norm_y = int(graph_y + graph_height - ((rh_val - reward_min_val) / reward_range) * graph_height)
+                    points.append((norm_x, norm_y))
 
-                # Draw points and connect them
-                last_x, last_y = None, None
-                for i in range(len(reward_history)):
-                    norm_x = int(graph_x + (i / len(reward_history)) * graph_width)
-                    norm_y = int(graph_y + graph_height -
-                                 ((reward_history[i] - reward_min) / reward_range) * graph_height)
+                if len(points) > 1:
+                    cv2.polylines(display_frame, [np.array(points)], isClosed=False, color=(0, 255, 255), thickness=1)
+                elif len(points) == 1: # Draw a single point if only one data point
+                     cv2.circle(display_frame, points[0], 2, (0, 255, 255), -1)
 
-                    cv2.circle(display_frame, (norm_x, norm_y), 2, (0, 255, 255), -1)
+                cv2.putText(display_frame, "Rwd Hist.", (graph_x, graph_y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (220,220,220),1)
+                cv2.putText(display_frame, f"{reward_max_val:.1f}", (graph_x + graph_width + 5, graph_y + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (220,220,220),1)
+                cv2.putText(display_frame, f"{reward_min_val:.1f}", (graph_x + graph_width + 5, graph_y + graph_height - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (220,220,220),1)
 
-                    if last_x is not None and last_y is not None:
-                        cv2.line(display_frame, (last_x, last_y), (norm_x, norm_y), (0, 255, 255), 1)
-
-                    last_x, last_y = norm_x, norm_y
-
-                # Add graph labels
-                cv2.putText(display_frame, "Reward History", (graph_x, graph_y - 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-                cv2.putText(display_frame, f"{reward_max:.1f}",
-                            (graph_x - 25, graph_y + 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-                cv2.putText(display_frame, f"{reward_min:.1f}",
-                            (graph_x - 25, graph_y + graph_height - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-
-            # Display frame
             if display:
-                cv2.imshow("ROS Bag Analysis", display_frame)
+                cv2.imshow("ROS Bag Analysis (Simplified)", display_frame)
                 key = cv2.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    break
-
-            # Write to video file if requested
+                if key == ord('q'): break
+                elif key == ord('p'): cv2.waitKey(-1) # Pause
+                sleep(0.05)
             if video_writer:
-                video_writer.write(display_frame)
+                video_writer.write(display_frame) # Assume write is successful
 
-    # Cleanup
     bag.close()
-    csv_file.close()
     if video_writer:
         video_writer.release()
     if display:
         cv2.destroyAllWindows()
-
-    print(f"Processed {frames_processed} frames")
-    print(f"Data saved to {csv_filename}")
-    if output_video:
-        print(f"Video saved to {output_video}")
-
     return frames_processed
 
-# added functionality to calculate fuel consumption (Aaryan/Pragya)
-def calculate_fuel_consumption(current_velocity, prev_velocity, time_diff, omega, fuel_efficiency=0.1):
-    """
-    Calculate fuel consumption based on velocity, acceleration, turning, and time elapsed.
-
-    Args:
-        current_velocity (float): Current forward velocity
-        prev_velocity (float): Previous forward velocity
-        time_diff (float): Time elapsed since last calculation
-        omega (float): Angular velocity (turning rate)
-        fuel_efficiency (float): Base fuel efficiency factor
-
-    Returns:
-        float: Fuel consumed in this time step
-    """
-    # Base idle consumption (engine running but not moving)
-    idle_consumption = 0.01 * time_diff
-
-    # Calculate acceleration (can be positive or negative)
-    acceleration = (current_velocity - prev_velocity) / time_diff if time_diff > 0 else 0
-
-    # Velocity-based consumption
-    speed_factor = abs(current_velocity) * 0.05  # Higher speeds use more fuel
-
-    # Turning-based consumption
-    turn_factor = abs(omega) * 0.02  # Sharper turns use more fuel
-
-    # Acceleration-based consumption
-    # Positive acceleration (speeding up) uses more fuel
-    # Negative acceleration (braking) uses less additional fuel
-    accel_factor = 0
-    if acceleration > 0:
-        # Positive acceleration increases consumption exponentially
-        accel_factor = (acceleration ** 2) * 0.1
-    elif acceleration < 0:
-        # Regenerative braking - can slightly reduce consumption
-        # Using abs() because we want a small positive number for mild negative acceleration
-        accel_factor = min(abs(acceleration) * 0.01, 0.02)  # Cap the benefit
-
-    # Total consumption calculation
-    consumption = (idle_consumption +
-                  (speed_factor + turn_factor) * time_diff +
-                  accel_factor * time_diff)
-
-    # Apply fuel efficiency factor
-    consumption = consumption / fuel_efficiency
-
-    return max(0, consumption)  # Ensure consumption is not negative
-
-# same as process_bag_file but with added fuel consumption calculation
-def process_bag_file_with_fuel(bag_path, output_video=None, display=True, env_type="real"):
-    """Process a bag file, display video with data, and optionally save to a file"""
-    # Determine bot name based on environment type
-    bot_name = "chicinvabot" if env_type == "real" else "vchicinvabot"
-
-    # Define topics with bot name
-    image_topic = f"/{bot_name}/camera_node/image/compressed"
-    data_topic = f"/{bot_name}/car_cmd_switch_node/cmd"
-    accept_topic = f"/{bot_name}/car_cmd_switch_node/cmd_executed"
-    lane_pose_topic = f"/{bot_name}/lane_filter_node/lane_pose"
-
-    print(f"Processing {bag_path} with bot name: {bot_name}")
-    print(f"Using topics: \n  {image_topic}\n  {data_topic}\n  {accept_topic}\n  {lane_pose_topic}")
-
-    # Open bag file
-    bag = rosbag.Bag(bag_path)
-    bridge = CvBridge()
-
-    # Buffers for synchronizing messages
-    data_buffer = deque(maxlen=20)
-    accept_buffer = deque(maxlen=20)
-    lane_pose_buffer = deque(maxlen=20)
-
-    # Create output video writer if requested
-    video_writer = None
-
-    # Track frames for reward history
-    reward_history = deque(maxlen=100)
-    time_history = deque(maxlen=100)
-    lane_d_history = deque(maxlen=100)
-    lane_phi_history = deque(maxlen=100)
-
-    # Track fuel consumption
-    fuel_consumption_history = deque(maxlen=100)
-    total_fuel_consumed = 0.0  # Add this variable to track cumulative fuel consumption
-
-    # Get all timestamps from the bag to calculate progress
-    total_timestamps = []
-    for _, _, t in bag.read_messages():
-        total_timestamps.append(t.to_sec())
-
-    start_time = min(total_timestamps) if total_timestamps else 0
-    end_time = max(total_timestamps) if total_timestamps else 0
-    duration = end_time - start_time
-
-    # Setup CSV for data logging
-    csv_filename = os.path.splitext(bag_path)[0] + "_analysis.csv"
-    csv_file = open(csv_filename, 'w')
-    csv_file.write("timestamp,cmd_v,cmd_omega,executed_v,executed_omega,lane_d,lane_phi,in_lane,reward,instant_fuel,cumulative_fuel\n")  # Modified header
-
-    # First pass to get video dimensions
-    frame_shape = None
-    for topic, msg, _ in bag.read_messages(topics=[image_topic]):
-        if topic == image_topic:
-            frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
-            frame_shape = frame.shape
-            break
-
-    # Setup video writer if dimensions are found
-    if output_video and frame_shape:
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        video_writer = cv2.VideoWriter(output_video, fourcc, 30.0,
-                                       (frame_shape[1], frame_shape[0]))
-
-    # Read messages
-    current_progress = 0
-    frames_processed = 0
-
-    for topic, msg, t in bag.read_messages(topics=[image_topic, data_topic, accept_topic, lane_pose_topic]):
-        sleep(0.01)  # Small delay to allow for processing
-        timestamp = t.to_sec()
-        progress = int(((timestamp - start_time) / duration) * 100) if duration > 0 else 0
-
-        if progress > current_progress:
-            current_progress = progress
-            print(f"Progress: {current_progress}%")
-
-        if topic == data_topic:
-            data_buffer.append((timestamp, msg))
-
-        elif topic == accept_topic:
-            accept_buffer.append((timestamp, msg))
-
-        elif topic == lane_pose_topic:
-            lane_pose_buffer.append((timestamp, msg))
-
-            # Check if lane departure occurred
-            try:
-                in_lane = msg.in_lane
-            except AttributeError:
-                in_lane = abs(msg.d) < 0.3
-
-            if not in_lane:
-                print(f"Lane departure detected at timestamp {timestamp:.3f}")
-
-        elif topic == image_topic:
-            frames_processed += 1
-            frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
-
-            # Find closest velocity message
-            current_velocity = 0.0
-            cmd_omega = 0.0
-            if data_buffer:
-                closest_time, closest_msg = min(data_buffer, key=lambda x: abs(x[0] - timestamp))
-                time_diff = abs(closest_time - timestamp)
-                if time_diff < 0.1:  # Only use if within 100ms
-                    current_velocity = closest_msg.v
-                    cmd_omega = closest_msg.omega
-
-            # Find closest executed velocity message
-            executed_v = 0.0
-            executed_omega = 0.0
-            if accept_buffer:
-                closest_time, closest_msg = min(accept_buffer, key=lambda x: abs(x[0] - timestamp))
-                time_diff = abs(closest_time - timestamp)
-                if time_diff < 0.1:  # Only use if within 100ms
-                    executed_v = closest_msg.v
-                    executed_omega = closest_msg.omega
-
-            # Find closest LanePose message
-            lane_d = 0.0
-            lane_phi = 0.0
-            in_lane = True
-            current_reward = None
-            instant_fuel_consumption = 0.0  # Initialize per-frame fuel consumption
-
-            if lane_pose_buffer:
-                closest_time, closest_lane_msg = min(lane_pose_buffer, key=lambda x: abs(x[0] - timestamp))
-                time_diff = abs(closest_time - timestamp)
-
-                if time_diff < 0.1:  # Only use if within 100ms
-                    lane_d = closest_lane_msg.d
-                    lane_phi = closest_lane_msg.phi
-
-                    # Extract in_lane status
-                    try:
-                        in_lane = closest_lane_msg.in_lane
-                    except AttributeError:
-                        in_lane = abs(lane_d) < 0.3
-
-                    # Calculate fuel consumption
-                    if frames_processed > 1:  # Ensure we have a previous velocity to compare
-                        prev_velocity = data_buffer[-2][1].v if len(data_buffer) > 1 else 0.0
-                        omega = closest_msg.omega if 'omega' in closest_msg.__slots__ else 0.0
-                        instant_fuel_consumption = calculate_fuel_consumption(current_velocity, prev_velocity,
-                                                                       time_diff, omega)
-                    else:
-                        instant_fuel_consumption = 0.0
-
-                    # If the vehicle is not in lane, we can increase the fuel consumption penalty
-                    if not in_lane:
-                        instant_fuel_consumption += 0.05
-
-                    # Ensure fuel consumption is non-negative
-                    instant_fuel_consumption = max(0, instant_fuel_consumption)
-
-                    # Add to the cumulative total
-                    total_fuel_consumed += instant_fuel_consumption  # Accumulate the fuel consumption
-
-                    # Calculate reward using the provided function with fuel consumption
-                    current_reward = compute_reward_fuel(lane_d, lane_phi, current_velocity, in_lane, instant_fuel_consumption)
-
-                    # Update histories
-                    reward_history.append(current_reward)
-                    time_history.append(timestamp - start_time)
-                    lane_d_history.append(lane_d)
-                    lane_phi_history.append(lane_phi)
-                    fuel_consumption_history.append(instant_fuel_consumption)
-
-            # Write to CSV with both instant and cumulative fuel consumption
-            csv_file.write(f"{timestamp},{current_velocity},{cmd_omega},{executed_v},{executed_omega},"
-                           f"{lane_d},{lane_phi},{1 if in_lane else 0},{current_reward if current_reward is not None else ''},"
-                           f"{instant_fuel_consumption},{total_fuel_consumed}\n")
-
-            # Create a clean copy of the frame for visualization
-            display_frame = frame.copy()
-
-            # Add a semi-transparent overlay at the top for text
-            overlay = display_frame.copy()
-            cv2.rectangle(overlay, (0, 0), (display_frame.shape[1], 120), (0, 0, 0), -1)
-            cv2.addWeighted(overlay, 0.7, display_frame, 0.3, 0, display_frame)
-
-            # Add timestamp and frame number
-            cv2.putText(display_frame, f"Time: {timestamp - start_time:.2f}s  Frame: {frames_processed}",
-                        (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-
-            # Add velocity commands
-            velocity_text = f"Commanded: v={current_velocity:.3f} omega={cmd_omega:.3f}"
-            cv2.putText(display_frame, velocity_text, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-
-            # Add executed velocity
-            executed_text = f"Executed: v={executed_v:.3f} omega={executed_omega:.3f}"
-            cv2.putText(display_frame, executed_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
-
-            # Add lane pose data
-            lane_text = f"Lane: d={lane_d:.3f} phi={lane_phi:.3f} In Lane: {'Yes' if in_lane else 'No'}"
-            lane_color = (0, 255, 0) if in_lane else (0, 0, 255)  # Green if in lane, red if not
-            cv2.putText(display_frame, lane_text, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, lane_color, 1)
-
-            # Add current and total fuel consumption information
-            fuel_text = f"Instant Fuel: {instant_fuel_consumption:.3f} Units  Total Fuel: {total_fuel_consumed:.3f} Units"
-            cv2.putText(display_frame, fuel_text, (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-
-            # Add reward
-            if current_reward is not None:
-                reward_text = f"Reward: {current_reward:.3f}"
-                cv2.putText(display_frame, reward_text, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
-
-            # Draw reward graph in bottom right corner if we have history
-            if reward_history:
-                graph_width = 200
-                graph_height = 100
-                graph_x = display_frame.shape[1] - graph_width - 10
-                graph_y = display_frame.shape[0] - graph_height - 10
-
-                # Draw graph background
-                cv2.rectangle(display_frame, (graph_x, graph_y),
-                              (graph_x + graph_width, graph_y + graph_height), (0, 0, 0), -1)
-                cv2.rectangle(display_frame, (graph_x, graph_y),
-                              (graph_x + graph_width, graph_y + graph_height), (255, 255, 255), 1)
-
-                # Draw rewards
-                reward_min = min(reward_history) if reward_history else -2
-                reward_max = max(reward_history) if reward_history else 2
-                reward_range = max(0.1, reward_max - reward_min)  # Avoid division by zero
-
-                # Draw points and connect them
-                last_x, last_y = None, None
-                for i in range(len(reward_history)):
-                    norm_x = int(graph_x + (i / len(reward_history)) * graph_width)
-                    norm_y = int(graph_y + graph_height -
-                                 ((reward_history[i] - reward_min) / reward_range) * graph_height)
-
-                    cv2.circle(display_frame, (norm_x, norm_y), 2, (0, 255, 255), -1)
-
-                    if last_x is not None and last_y is not None:
-                        cv2.line(display_frame, (last_x, last_y), (norm_x, norm_y), (0, 255, 255), 1)
-
-                    last_x, last_y = norm_x, norm_y
-
-                # Add graph labels
-                cv2.putText(display_frame, "Reward History", (graph_x, graph_y - 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-                cv2.putText(display_frame, f"{reward_max:.1f}",
-                            (graph_x - 25, graph_y + 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-                cv2.putText(display_frame, f"{reward_min:.1f}",
-                            (graph_x - 25, graph_y + graph_height - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-
-            # Display frame
-            if display:
-                cv2.imshow("ROS Bag Analysis", display_frame)
-                key = cv2.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    break
-
-            # Write to video file if requested
-            if video_writer:
-                video_writer.write(display_frame)
-
-    # Cleanup
-    bag.close()
-    csv_file.close()
-    if video_writer:
-        video_writer.release()
-    if display:
-        cv2.destroyAllWindows()
-
-    print(f"Processed {frames_processed} frames")
-    print(f"Data saved to {csv_filename}")
-    print(f"Total fuel consumed: {total_fuel_consumed:.3f} L")  # Print total fuel consumption at the end
-    if output_video:
-        print(f"Video saved to {output_video}")
-
-    return frames_processed, total_fuel_consumed  # Return the total fuel consumption as well
-
 def main():
-    parser = argparse.ArgumentParser(description='Process and visualize ROS bag files with reward calculation')
+    parser = argparse.ArgumentParser(description='Process and visualize ROS bag files (Simplified)')
     parser.add_argument('bag_path', help='Path to the bag file or directory containing bag files')
     parser.add_argument('--output_video', help='Output video file path (optional)')
     parser.add_argument('--no_display', action='store_true', help='Disable video display')
     parser.add_argument('--env_type', choices=['real', 'sim'], default='real',
                         help='Environment type (real or sim) to determine bot name')
-    parser.add_argument('--fuel', action='store_true', help='Use fuel consumption visualization')
+    parser.add_argument('--display_source', choices=['camera', 'ground_projection'], default='camera',
+                        help='Image topic to use for display (camera or ground_projection)')
+    parser.add_argument('--hide_fsm_state', action='store_true', default=False,
+                        help='Hide the FSM state from the display (default: show)')
     args = parser.parse_args()
 
-    # Check if path is a directory or a file
+    display_enabled = not args.no_display
+    show_fsm_state_flag = not args.hide_fsm_state
+
     if os.path.isdir(args.bag_path):
-        # Process all bag files in directory
-        bag_files = [f for f in os.listdir(args.bag_path) if f.endswith('.bag')]
-
+        bag_files = sorted([f for f in os.listdir(args.bag_path) if f.endswith('.bag')])
         if not bag_files:
-            print(f"No bag files found in {args.bag_path}")
+            print(f"No bag files found in directory: {args.bag_path}") # Kept for crucial feedback
             return
 
-        print(f"Found {len(bag_files)} bag files to process")
-
-        for bag_file in bag_files:
-            bag_path = os.path.join(args.bag_path, bag_file)
-
-            # Determine output video path if needed
-            output_video = None
+        for bag_file_name in bag_files:
+            current_bag_path = os.path.join(args.bag_path, bag_file_name)
+            current_output_video = None
             if args.output_video:
-                base_name = os.path.splitext(bag_file)[0]
-                output_dir = os.path.dirname(args.output_video)
-                if output_dir and not os.path.exists(output_dir):
-                    os.makedirs(output_dir)
-                output_video = os.path.join(output_dir if output_dir else '', f"{base_name}_analysis.avi")
+                # Simplified output video path generation for batch
+                output_dir = os.path.dirname(args.output_video) if \
+                             os.path.splitext(args.output_video)[1] else \
+                             args.output_video # If extensionless, assume it's a dir
 
-            if args.fuel:
-                # Process each bag file with fuel consumption calculation
-                print(f"Processing {bag_path} with fuel consumption calculation")
-                process_bag_file_with_fuel(bag_path, output_video, not args.no_display, args.env_type)
-            else:
-                process_bag_file(bag_path, output_video, not args.no_display, args.env_type)
-    else:
-        # Process single bag file
+                if not output_dir : output_dir = "." # Default to current dir if empty
+
+                if not os.path.exists(output_dir) and output_dir != ".":
+                    os.makedirs(output_dir) # Assume makedirs is successful
+
+                base_name = os.path.splitext(bag_file_name)[0]
+                # Use a fixed suffix or derive from original output_video arg if it was a file name
+                video_file_suffix = "_analysis"
+                if os.path.splitext(args.output_video)[1] and not os.path.isdir(args.output_video): # if original arg was a file
+                    video_file_suffix = "_" + os.path.splitext(os.path.basename(args.output_video))[0]
+
+                video_ext = os.path.splitext(args.output_video)[1] if os.path.splitext(args.output_video)[1] else ".avi"
+                current_output_video = os.path.join(output_dir, f"{base_name}{video_file_suffix}{video_ext}")
+
+            process_bag_file(current_bag_path, current_output_video, display_enabled,
+                             args.env_type, args.display_source, show_fsm_state_flag)
+    else: # Single bag file
         if not os.path.exists(args.bag_path):
-            print(f"Bag file not found: {args.bag_path}")
+            print(f"Bag file not found: {args.bag_path}") # Kept for crucial feedback
             return
-
-        if args.fuel:
-            process_bag_file_with_fuel(args.bag_path, args.output_video, not args.no_display, args.env_type)
-        else:
-            process_bag_file(args.bag_path, args.output_video, not args.no_display, args.env_type)
-
+        process_bag_file(args.bag_path, args.output_video, display_enabled,
+                         args.env_type, args.display_source, show_fsm_state_flag)
 
 if __name__ == "__main__":
     main()
