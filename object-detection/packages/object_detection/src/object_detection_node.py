@@ -96,7 +96,7 @@ class ObjectDetectionNode(DTROS):
         updated_bboxes, updated_classes, updated_scores = self.publish_detections(bboxes, classes, scores, image_msg, rgb)
 
         # Use the updated values for visualization, including confidence scores
-        self.visualize_detections(rgb, updated_bboxes, updated_classes, updated_scores)
+        # self.visualize_detections(rgb, updated_bboxes, updated_classes, updated_scores)
 
     def get_hsi(self, bbox, rgb, brightness_threshold=200):
         """
@@ -307,7 +307,7 @@ class ObjectDetectionNode(DTROS):
 
             ###################################################################
             # Duckiebot Processing
-            elif (cls == 0 or cls == 1) and score >= 0.6:
+            elif (cls == 0 or cls == 1) and score >= 0.5:
                 hue, saturation, intensity = self.get_hsi_blue_yellow(bbox, rgb, brightness_threshold=0)
 
                 # Define color ranges specifically for duckie object detection
@@ -337,19 +337,26 @@ class ObjectDetectionNode(DTROS):
                 center_x = (xx1 + xx2) // 2
                 center_y = (yy1 + yy2) // 2
 
-                # Define stop region
-                REGION_X_MIN = IMAGE_SIZE / 4
-                REGION_X_MAX = IMAGE_SIZE / 4 * 3
-                REGION_Y_MIN = IMAGE_SIZE / 2
-                REGION_Y_MAX = IMAGE_SIZE
+                # # Define stop region
+                # REGION_X_MIN = IMAGE_SIZE / 4
+                # REGION_X_MAX = IMAGE_SIZE / 4 * 3
+                # REGION_Y_MIN = IMAGE_SIZE / 2
+                # REGION_Y_MAX = IMAGE_SIZE
 
-                AREA_THRESHOLD = 1500
+                AREA_THRESHOLD = 1500 if cls == 10 else 9000  # Adjusted area threshold for duckiebot
 
                 current_time = rospy.Time.now()
 
                 # --- Detection Validity Check ---
-                inside_stop_region = (REGION_X_MIN <= center_x <= REGION_X_MAX and
-                                      REGION_Y_MIN <= center_y <= REGION_Y_MAX)
+                poly = np.array([
+                    [0, IMAGE_SIZE],
+                    [IMAGE_SIZE, IMAGE_SIZE],
+                    [int(2 * IMAGE_SIZE / 3), int(IMAGE_SIZE / 4)],
+                    [int(IMAGE_SIZE / 3), int(IMAGE_SIZE / 4 )]
+                ], dtype=np.int32)
+
+                # point-in-polygon test: +1 inside, 0 on edge, -1 outside
+                inside_stop_region = cv2.pointPolygonTest(poly, (center_x, center_y), False) >= 0
                 is_valid = inside_stop_region and duckiebot_area > AREA_THRESHOLD
 
                 # --- Update Detection Buffer ---
@@ -361,10 +368,10 @@ class ObjectDetectionNode(DTROS):
 
                 # --- Reset buffer if no valid detection in last 5s ---
                 if (current_time - self.last_detection_time).to_sec() > 5.0:
-                    self.detection_buffer = deque([False] * len(self.detection_buffer), maxlen=len(self.detection_buffer))
-
+                    self.detection_buffer = deque([False] * 5, maxlen=5)
+                    # self.log('reset buffer due to no valid detection in last 5s')
                 count_true = sum(self.detection_buffer)
-                should_stop = count_true >= 3
+                should_stop = count_true >= 1
 
                 # === Timeout logic ===
                 if should_stop:
@@ -383,7 +390,11 @@ class ObjectDetectionNode(DTROS):
                 msg = BoolStamped()
                 msg.data = should_stop
                 msg.header = image_msg.header
-                for _ in range(4):
+                if should_stop:
+                    for _ in range(4):
+                        self.obstacle_caused_stop.publish(msg)
+                        rospy.sleep(0.05)
+                else:
                     self.obstacle_caused_stop.publish(msg)
 
                 # --- Debug ---
@@ -452,6 +463,22 @@ class ObjectDetectionNode(DTROS):
         # Make a copy of rgb to avoid modifying the original
         vis_img = rgb.copy()
 
+        # Precompute the same stop polygon for drawing
+
+        # define a distinct color for the stop polygon
+        poly_color = (255, 0, 255)  # magenta
+        poly_thickness = 2
+
+        stop_poly = np.array([
+            [0, IMAGE_SIZE],
+            [IMAGE_SIZE, IMAGE_SIZE],
+            [int(2 * IMAGE_SIZE / 3), int(IMAGE_SIZE / 4)],
+            [int(IMAGE_SIZE / 3), int(IMAGE_SIZE / 4)]
+        ], dtype=np.int32)
+        # draw the polygon boundary once
+        cv2.polylines(vis_img, [stop_poly], isClosed=True, color=poly_color, thickness=poly_thickness)
+
+
         for i, (clas, box) in enumerate(zip(classes, bboxes)):
             clas = int(clas)  # Ensure class is an integer
             if clas not in colors:
@@ -475,6 +502,18 @@ class ObjectDetectionNode(DTROS):
             # Draw text with score
             text_location = (pt1[0], min(pt2[1] + 30, IMAGE_SIZE))
             vis_img = cv2.putText(vis_img, display_text, text_location, font, 0.8, color, thickness=2)
+
+            # compute center
+            x1, y1, x2, y2 = pt1[0], pt1[1], pt2[0], pt2[1]
+            cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+
+            # test inside stop region
+            inside = cv2.pointPolygonTest(stop_poly, (cx, cy), False) >= 0
+
+            # mark center: green if OK, red if inside forbidden region
+            center_color = (0, 255, 0) if not inside else (0, 0, 255)
+            cv2.circle(vis_img, (cx, cy), radius=5, color=center_color, thickness=-1)
+
 
         bgr = vis_img[..., ::-1]
         obj_det_img = self.bridge.cv2_to_compressed_imgmsg(bgr)

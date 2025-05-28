@@ -159,7 +159,7 @@ class VehicleFilterNode(DTROS):
                     )
                     distance_to_vehicle = float(distance_to_vehicle)
 
-                    self.log(f"[VEH DETECT] Valid | Distance = {distance_to_vehicle:.2f}, Near = {is_near}")
+                    # self.log(f"[VEH DETECT] Valid | Distance = {distance_to_vehicle:.2f}, Near = {is_near}")
                     self.vehicle_detection_buffer.append(is_near)
 
                     # Voting

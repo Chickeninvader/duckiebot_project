@@ -101,8 +101,9 @@ class LaneControllerNode(DTROS):
         self.pose_msg = None
         self.reversed_omega = False
         self.obstacle_avoidance_timeout = None
-
+        self.is_finish_switch_lane = False
         self.switch_lane_start_time = None
+        self.obstacle_avoidance_finish = False
 
         self.current_pose_source = "lane_filter"
 
@@ -216,20 +217,22 @@ class LaneControllerNode(DTROS):
         Args:
             pose_msg (:obj:`LanePose`): Message containing information about the current lane pose.
         """
+        v = 0
+        omega = 0
         current_s = rospy.Time.now().to_sec()
         dt = None
         if self.last_s is not None:
             dt = current_s - self.last_s
 
         # Define constants for the lane switch durations
-        SWITCH_LANE_LEFT_FIRST_PHASE = 1.2
-        SWITCH_LANE_LEFT_SECOND_PHASE = 2.1
-        SWITCH_LANE_RIGHT_FIRST_PHASE = 0.8
-        SWITCH_LANE_RIGHT_SECOND_PHASE = 1.6
+        SWITCH_LANE_LEFT_FIRST_PHASE = 1.0
+        SWITCH_LANE_LEFT_SECOND_PHASE = 1.8
+        SWITCH_LANE_RIGHT_FIRST_PHASE = 1.0
+        SWITCH_LANE_RIGHT_SECOND_PHASE = 1.8
 
         # Introduce a dedicated state variable for lane switching
         if self.fsm_state in ["SWITCH_LANE_LEFT", "SWITCH_LANE_RIGHT"]:
-            if not self.is_switching_lane:
+            if not self.is_switching_lane and not self.is_finish_switch_lane:
                 self.is_switching_lane = True
                 self.switch_lane_start_time = rospy.Time.now()
                 self.reversed_omega = False
@@ -239,20 +242,20 @@ class LaneControllerNode(DTROS):
                 elapsed_time = (rospy.Time.now() - self.switch_lane_start_time).to_sec()
                 self.log(f"SWITCH_LANE ({self.fsm_state}): Elapsed time = {elapsed_time:.2f}s")
 
-                v = 0.16
+                v = 0.1
                 omega = 0.0  # Initialize omega
 
                 first_phase_duration = SWITCH_LANE_LEFT_FIRST_PHASE if self.fsm_state == "SWITCH_LANE_LEFT" else SWITCH_LANE_RIGHT_FIRST_PHASE
                 second_phase_duration = SWITCH_LANE_LEFT_SECOND_PHASE if self.fsm_state == "SWITCH_LANE_LEFT" else SWITCH_LANE_RIGHT_SECOND_PHASE
 
                 if elapsed_time < first_phase_duration:
-                    omega = 5 if self.fsm_state == "SWITCH_LANE_LEFT" else -5
+                    omega = 3.7 if self.fsm_state == "SWITCH_LANE_LEFT" else -3.7
                 elif elapsed_time < second_phase_duration:
-                    omega = -5 if self.fsm_state == "SWITCH_LANE_LEFT" else 5
+                    omega = 0 if self.fsm_state == "SWITCH_LANE_LEFT" else 0
                     if not self.reversed_omega:
                         self.log(f"SWITCH_LANE ({self.fsm_state}): Reversing omega for stabilization.")
                         self.reversed_omega = True
-                else:
+                elif not self.is_finish_switch_lane:
                     self.is_switching_lane = False
                     self.reversed_omega = False
                     self.log("SWITCH_LANE: Maneuver completed. Publishing finish message.", 'info')
@@ -262,10 +265,22 @@ class LaneControllerNode(DTROS):
                     msg.data = True
                     for _ in range(4):  # Publish multiple times without blocking
                         self.pub_finish_switch_lane.publish(msg)
+                        rospy.sleep(0.05)
+                    car_control_msg = Twist2DStamped()
+                    car_control_msg.header = pose_msg.header
+                    self.pose_msg = pose_msg
+
+                    # Add commands to car message
+                    car_control_msg.v = 0
+                    car_control_msg.omega = 0 # Multiply by 0.5 in sim
+
+                    for _ in range(4):  # Publish multiple times without blocking
+                        self.pub_car_cmd.publish(car_control_msg)
+                        rospy.sleep(0.05)
+                    self.is_finish_switch_lane = True
                     return  # Exit the callback after finishing the maneuver
 
                 self.log(f"SWITCH_LANE ({self.fsm_state}): Setting omega = {omega:.2f}, v_ref = {v:.2f}")
-
 
         elif ((self.at_stop_line or self.at_obstacle_stop_line) and (self.current_pose_source == 'lane_filter')
                 or self.fsm_state == "OBSTACLE_STOP"):
@@ -315,27 +330,34 @@ class LaneControllerNode(DTROS):
             self.is_switching_lane = False
             self.switch_lane_start_time = None
             self.reversed_omega = False
-            self.log("SWITCH_LANE: Lane switch confirmed by perception. Resetting state.")
+            self.is_finish_switch_lane = False
+            # self.log("SWITCH_LANE: Lane switch confirmed by perception. Resetting state.")
+
+        if self.fsm_state in ['SWITCH_LANE_LEFT', "SWITCH_LANE_RIGHT"] and self.is_finish_switch_lane:
+            return
 
         if self.fsm_state in ["OBSTACLE_AVOIDANCE"]:
             # After 5s of obstacle avoidance, we publish msg to topic: "lane_controller_node/obstacle_avoidance_finish"
-            if self.obstacle_avoidance_timeout is None:
+            if self.obstacle_avoidance_timeout is None and not self.obstacle_avoidance_finish:
                 self.obstacle_avoidance_timeout = rospy.Time.now()
                 self.log("Entered OBSTACLE_AVOIDANCE state. Starting timeout.")
             elapsed_time = (rospy.Time.now() - self.obstacle_avoidance_timeout).to_sec()
             self.log(f"OBSTACLE_AVOIDANCE: Elapsed time = {elapsed_time:.2f}s")
-            if elapsed_time > 5:
-                self.obstacle_avoidance_timeout = None
+            if elapsed_time > 2:
                 self.log("OBSTACLE_AVOIDANCE: Time out. Publishing finish message.", 'info')
 
                 msg = BoolStamped()
                 msg.header.stamp = rospy.Time.now()
                 msg.data = True
-                self.pub_finish_obstacle_avoidance.publish(msg)
-                self.pub_finish_obstacle_avoidance.publish(msg)
-                self.pub_finish_obstacle_avoidance.publish(msg)
-                self.pub_finish_obstacle_avoidance.publish(msg)
+                for _ in range(4):
+                    self.pub_finish_obstacle_avoidance.publish(msg)
+                    rospy.sleep(0.05)
+                self.obstacle_avoidance_finish = True
                 rospy.sleep(1)
+        else:
+            self.obstacle_avoidance_timeout = None
+        if self.fsm_state in ['SWITCH_LANE_RIGHT']:
+            self.obstacle_avoidance_finish = False
 
         # Initialize car control msg, add header from input message
         car_control_msg = Twist2DStamped()

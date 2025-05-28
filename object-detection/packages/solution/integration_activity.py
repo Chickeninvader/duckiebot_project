@@ -16,7 +16,7 @@ def MODEL_NAME() -> str:
 def NUMBER_FRAMES_SKIPPED() -> int:
     # TODO: change this number to drop more frames
     # (must be a positive integer)
-    return 8
+    return 5
 
 
 def filter_by_classes(pred_class: int) -> bool:
