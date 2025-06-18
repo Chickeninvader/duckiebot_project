@@ -337,6 +337,7 @@ class LaneControllerNode(DTROS):
             return
 
         if self.fsm_state in ["OBSTACLE_AVOIDANCE"]:
+            self.controller.reset_controller()
             # After 5s of obstacle avoidance, we publish msg to topic: "lane_controller_node/obstacle_avoidance_finish"
             if self.obstacle_avoidance_timeout is None and not self.obstacle_avoidance_finish:
                 self.obstacle_avoidance_timeout = rospy.Time.now()

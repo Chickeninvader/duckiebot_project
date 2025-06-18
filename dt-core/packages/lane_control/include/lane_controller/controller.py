@@ -146,6 +146,12 @@ class LaneController:
             self.d_I = 0
             self.phi_I = 0
 
+    def reset_controller(self):
+        self.d_I = 0.0               # Reset integral term for distance error
+        self.phi_I = 0.0             # Reset integral term for heading (angle) error
+        self.prev_d_err = 0.0        # Reset previous distance error (for derivative calculation)
+        self.prev_phi_err = 0.0      # Reset previous heading error (for derivative calculation)
+
     @staticmethod
     def adjust_integral(error, integral, bounds, resolution):
         """Bounds the integral error to avoid windup.
