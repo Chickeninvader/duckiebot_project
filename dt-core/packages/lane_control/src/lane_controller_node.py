@@ -225,10 +225,10 @@ class LaneControllerNode(DTROS):
             dt = current_s - self.last_s
 
         # Define constants for the lane switch durations
-        SWITCH_LANE_LEFT_FIRST_PHASE = 1.0
-        SWITCH_LANE_LEFT_SECOND_PHASE = 1.8
-        SWITCH_LANE_RIGHT_FIRST_PHASE = 1.0
-        SWITCH_LANE_RIGHT_SECOND_PHASE = 1.8
+        SWITCH_LANE_LEFT_FIRST_PHASE = 1.2
+        SWITCH_LANE_LEFT_SECOND_PHASE = 2.2
+        SWITCH_LANE_RIGHT_FIRST_PHASE = 0.1
+        SWITCH_LANE_RIGHT_SECOND_PHASE = 0.2
 
         # Introduce a dedicated state variable for lane switching
         if self.fsm_state in ["SWITCH_LANE_LEFT", "SWITCH_LANE_RIGHT"]:
@@ -249,9 +249,9 @@ class LaneControllerNode(DTROS):
                 second_phase_duration = SWITCH_LANE_LEFT_SECOND_PHASE if self.fsm_state == "SWITCH_LANE_LEFT" else SWITCH_LANE_RIGHT_SECOND_PHASE
 
                 if elapsed_time < first_phase_duration:
-                    omega = 3.7 if self.fsm_state == "SWITCH_LANE_LEFT" else -3.7
+                    omega = 3.8 if self.fsm_state == "SWITCH_LANE_LEFT" else -3.0
                 elif elapsed_time < second_phase_duration:
-                    omega = 0 if self.fsm_state == "SWITCH_LANE_LEFT" else 0
+                    omega = -1.0 if self.fsm_state == "SWITCH_LANE_LEFT" else 1.0
                     if not self.reversed_omega:
                         self.log(f"SWITCH_LANE ({self.fsm_state}): Reversing omega for stabilization.")
                         self.reversed_omega = True
@@ -289,34 +289,40 @@ class LaneControllerNode(DTROS):
             
         elif self.current_pose_source == 'lane_filter':
 
+            if self.fsm_state == "OBSTACLE_AVOIDANCE":
+                d_offset = self.params["~d_offset"]
+                theta_thres_max = -self.params["~theta_thres_min"].value
+                theta_thres_min = -self.params["~theta_thres_max"].value
+            else:
+                d_offset = self.params["~d_offset"]
+                theta_thres_max = self.params["~theta_thres_max"].value
+                theta_thres_min = self.params["~theta_thres_min"].value
+
             # Compute errors
-            d_err = pose_msg.d - self.params["~d_offset"]
-            # self.log(f"pose d: {pose_msg.d}, origin offset: {self.params['~d_offset']}, d_err: {d_err}")
+            d_err = pose_msg.d - d_offset
             phi_err = pose_msg.phi
 
-            # We cap the error if it grows too large
+            # Thresholding errors
             if np.abs(d_err) > self.params["~d_thres"]:
                 self.log("d_err too large, thresholding it!", "error")
                 d_err = np.sign(d_err) * self.params["~d_thres"]
-            
-            if phi_err > self.params["~theta_thres_max"].value or phi_err < self.params["~theta_thres_min"].value:
-                self.log("phi_err too large/small, thresholding it!", "error")
-                phi_err = np.maximum(self.params["~theta_thres_min"].value, np.minimum(phi_err, self.params["~theta_thres_max"].value))
 
+            if phi_err > theta_thres_max or phi_err < theta_thres_min:
+                self.log("phi_err too large/small, thresholding it!", "error")
+                phi_err = np.maximum(theta_thres_min, np.minimum(phi_err, theta_thres_max))
+
+            # Compute control command
             wheels_cmd_exec = [self.wheels_cmd_executed.vel_left, self.wheels_cmd_executed.vel_right]
             if self.obstacle_stop_line_detected:
                 v, omega = self.controller.compute_control_action(
                     d_err, phi_err, dt, wheels_cmd_exec, self.obstacle_stop_line_distance
                 )
-                # TODO: This is a temporarily fix to avoid vehicle image detection latency caused unable to stop in time.
                 v = v * 0.25
                 omega = omega * 0.25
-
             else:
                 v, omega = self.controller.compute_control_action(
                     d_err, phi_err, dt, wheels_cmd_exec, self.stop_line_distance
                 )
-
             # For feedforward action (i.e. during intersection navigation)
             omega += self.params["~omega_ff"]
 
@@ -344,8 +350,8 @@ class LaneControllerNode(DTROS):
                 self.log("Entered OBSTACLE_AVOIDANCE state. Starting timeout.")
             elapsed_time = (rospy.Time.now() - self.obstacle_avoidance_timeout).to_sec()
             self.log(f"OBSTACLE_AVOIDANCE: Elapsed time = {elapsed_time:.2f}s")
-            if elapsed_time > 2:
-                self.log("OBSTACLE_AVOIDANCE: Time out. Publishing finish message.", 'info')
+            if elapsed_time > 1:
+                self.log("OBSTACLE_AVOIDANCE: Time out and in approximately straight lane. Publishing finish message.", 'info')
 
                 msg = BoolStamped()
                 msg.header.stamp = rospy.Time.now()
@@ -359,6 +365,7 @@ class LaneControllerNode(DTROS):
             self.obstacle_avoidance_timeout = None
         if self.fsm_state in ['SWITCH_LANE_RIGHT']:
             self.obstacle_avoidance_finish = False
+            self.controller.reset_controller()
 
         # Initialize car control msg, add header from input message
         car_control_msg = Twist2DStamped()
