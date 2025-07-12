@@ -29,6 +29,7 @@ class LaneController:
     """
 
     def __init__(self, parameters):
+        self.initial_parameters = parameters
         self.parameters = parameters
         self.d_I = 0.0
         self.phi_I = 0.0
@@ -147,6 +148,7 @@ class LaneController:
             self.phi_I = 0
 
     def reset_controller(self):
+        self.parameters = self.initial_parameters
         self.d_I = 0.0               # Reset integral term for distance error
         self.phi_I = 0.0             # Reset integral term for heading (angle) error
         self.prev_d_err = 0.0        # Reset previous distance error (for derivative calculation)

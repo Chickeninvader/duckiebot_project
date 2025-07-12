@@ -90,13 +90,14 @@ class ObjectDetectionNode(DTROS):
 
         rgb = bgr[..., ::-1]
         rgb = cv2.resize(rgb, (IMAGE_SIZE, IMAGE_SIZE))
+        self.log("get image")
         bboxes, classes, scores = self.model_wrapper.predict(rgb)
 
         # Call publish_detections with the model outputs and get updated results
         updated_bboxes, updated_classes, updated_scores = self.publish_detections(bboxes, classes, scores, image_msg, rgb)
 
         # Use the updated values for visualization, including confidence scores
-        # self.visualize_detections(rgb, updated_bboxes, updated_classes, updated_scores)
+        self.visualize_detections(rgb, updated_bboxes, updated_classes, updated_scores)
 
     def get_hsi(self, bbox, rgb, brightness_threshold=200):
         """
@@ -256,20 +257,14 @@ class ObjectDetectionNode(DTROS):
         updated_classes = classes.copy()
         updated_scores = scores.copy()
 
-        #################################################################
-        # add a empty object, as placeholder
+        # Add empty placeholder object
         detection = ObstacleImageDetection()
-        detection.bounding_box = Rect(
-            x=0,
-            y=0,
-            w=0,
-            h=0
-        )
+        detection.bounding_box = Rect(x=0, y=0, w=0, h=0)
         detection.type.type = 200
         detection_list_msg.list.append(detection)
-        #################################################################
 
-        valid_detections = []  # To store indices of valid detections
+        valid_detections = []
+        valid_obstacle_detected = False  # Track if any valid duckie/duckiebot is detected
 
         for i, (bbox, cls, score) in enumerate(zip(bboxes, classes, scores)):
             cls = int(cls)
@@ -282,137 +277,70 @@ class ObjectDetectionNode(DTROS):
             # Traffic Light Processing
             if cls == 3 and score >= 0.5:
                 hue, saturation, intensity = self.get_hsi(bbox, rgb)
-
-                ####################################
-                self.log("\n********************************\n" +
-                         f"score: {score}\n" +
-                         f"hue: {hue:.1f}\n" +
-                         "\n************************************\n", "debug")
-                ######################################
-
+                
                 RED_HUE_RANGE_1 = (0, 30)
-                # RED_HUE_RANGE_2 = (160, 180)
                 RED_HUE_RANGE_2 = (330, 360)
                 GREEN_HUE_RANGE = (40, 100)
 
                 if ((RED_HUE_RANGE_1[0] <= hue <= RED_HUE_RANGE_1[1] or
-                     RED_HUE_RANGE_2[0] <= hue <= RED_HUE_RANGE_2[1])):
+                    RED_HUE_RANGE_2[0] <= hue <= RED_HUE_RANGE_2[1])):
                     cls = 30  # Red light
-                    updated_classes[i] = cls  # Update class in the copy
-                    self.log(f"detect red traffic light!")
+                    updated_classes[i] = cls
                 elif GREEN_HUE_RANGE[0] <= hue <= GREEN_HUE_RANGE[1]:
                     cls = 31  # Green light
-                    updated_classes[i] = cls  # Update class in the copy
-                    self.log(f"detect green traffic light!")
+                    updated_classes[i] = cls
 
-            ###################################################################
-            # Duckiebot Processing
+            # Duckie/Duckiebot Processing
             elif (cls == 0 or cls == 1) and score >= 0.5:
                 hue, saturation, intensity = self.get_hsi_blue_yellow(bbox, rgb, brightness_threshold=0)
 
-                # Define color ranges specifically for duckie object detection
                 YELLOW_HUE_RANGE = (10, 30)  # Pedestrian (Duck)
                 BLUE_HUE_RANGE = (290, 310)  # Vehicle
 
-                # More specific detection based on color
                 if YELLOW_HUE_RANGE[0] <= hue <= YELLOW_HUE_RANGE[1]:
                     cls = 10  # Pedestrian duck (yellow)
                     updated_classes[i] = cls
-                    self.log(f"detect pedestrian (duck) with yellow color!")
                 elif BLUE_HUE_RANGE[0] <= hue <= BLUE_HUE_RANGE[1]:
                     cls = 11  # Vehicle (blue)
                     updated_classes[i] = cls
-                    self.log(f"detect vehicle with blue color!")
                 else:
                     cls = 12  # Other duckiebot (undetermined color)
                     updated_classes[i] = cls
-                    self.log(f"detect duckiebot with undetermined color")
 
+                # Calculate bounding box properties
                 yy1, yy2 = int(bbox[1]), int(bbox[3])
                 xx1, xx2 = int(bbox[0]), int(bbox[2])
                 duckiebot_area = (xx2 - xx1) * (yy2 - yy1)
-                updated_classes[i] = cls  # Update class in the copy
-
-                # Compute center of bounding box
                 center_x = (xx1 + xx2) // 2
                 center_y = (yy1 + yy2) // 2
 
-                # # Define stop region
-                # REGION_X_MIN = IMAGE_SIZE / 4
-                # REGION_X_MAX = IMAGE_SIZE / 4 * 3
-                # REGION_Y_MIN = IMAGE_SIZE / 2
-                # REGION_Y_MAX = IMAGE_SIZE
-
-                AREA_THRESHOLD = 1500 if cls == 10 else 9000  # Adjusted area threshold for duckiebot
-
-                current_time = rospy.Time.now()
-
-                # --- Detection Validity Check ---
+                # Define stop region polygon
                 poly = np.array([
                     [0, IMAGE_SIZE],
                     [IMAGE_SIZE, IMAGE_SIZE],
                     [int(2 * IMAGE_SIZE / 3), int(IMAGE_SIZE / 4)],
-                    [int(IMAGE_SIZE / 3), int(IMAGE_SIZE / 4 )]
+                    [int(IMAGE_SIZE / 3), int(IMAGE_SIZE / 4)]
                 ], dtype=np.int32)
 
-                # point-in-polygon test: +1 inside, 0 on edge, -1 outside
+                AREA_THRESHOLD = 1500 if cls == 10 else 9000
                 inside_stop_region = cv2.pointPolygonTest(poly, (center_x, center_y), False) >= 0
                 is_valid = inside_stop_region and duckiebot_area > AREA_THRESHOLD
 
-                # --- Update Detection Buffer ---
-                if is_valid:
-                    self.last_detection_time = current_time
-                    self.detection_buffer.append(True)
-                else:
-                    self.detection_buffer.append(False)
+                if is_valid and not valid_obstacle_detected:
+                    valid_obstacle_detected = True
+                    self.last_detection_time = rospy.Time.now()
 
-                # --- Reset buffer if no valid detection in last 5s ---
-                if (current_time - self.last_detection_time).to_sec() > 5.0:
-                    self.detection_buffer = deque([False] * 5, maxlen=5)
-                    # self.log('reset buffer due to no valid detection in last 5s')
-                count_true = sum(self.detection_buffer)
-                should_stop = count_true >= 1
-
-                # === Timeout logic ===
-                if should_stop:
-                    if self.stop_start_time is None:
-                        self.stop_start_time = current_time
-                    elif (current_time - self.stop_start_time).to_sec() >= 5.0:
-                        timeout_msg = BoolStamped()
-                        timeout_msg.data = True
-                        timeout_msg.header = image_msg.header
-                        for _ in range(4):
-                            self.obstacle_timeout.publish(timeout_msg)
-                else:
-                    self.stop_start_time = None  # reset if not stopping
-
-                # --- Publish Stop Decision ---
-                msg = BoolStamped()
-                msg.data = should_stop
-                msg.header = image_msg.header
-                if should_stop:
-                    for _ in range(4):
-                        self.obstacle_caused_stop.publish(msg)
-                        rospy.sleep(0.05)
-                else:
-                    self.obstacle_caused_stop.publish(msg)
-
-                # --- Debug ---
-                self.log("\n************************************\n" +
-                         f"detect duckiebot and confident\n" +
-                         f"score: {score}\n" +
-                         f"duckiebot area: {duckiebot_area}\n" +
-                         f"center: ({center_x}, {center_y})\n" +
-                         f"inside_stop_region: {inside_stop_region}\n" +
-                         f"is_valid: {is_valid}, buffer: {list(self.detection_buffer)}\n" +
-                         f"should_stop: {should_stop}\n" +
-                         ("OBSTACLE TIMEOUT TRIGGERED\n" if should_stop and self.stop_start_time and
-                          (current_time - self.stop_start_time).to_sec() >= 5.0 else "") +
-                         "************************************\n")
+                # Debug logging for duckie/duckiebot detections
+                color_type = "yellow duck" if cls == 10 else "blue vehicle" if cls == 11 else "undetermined"
+                self.log(f"Detected {color_type} - Score: {score:.2f}, Area: {duckiebot_area}, "
+                        f"Center: ({center_x}, {center_y}), Valid: {is_valid}")
 
             else:
-                self.log(f"detect {cls} {names[cls]} with score {score:.2f}!\n")
+                # Log other detections
+                if cls in names:
+                    self.log(f"Detected {names[cls]} with score {score:.2f}")
 
+            # Create detection message
             detection = ObstacleImageDetection()
             detection.bounding_box = Rect(
                 x=int(bbox[0]),
@@ -422,99 +350,143 @@ class ObjectDetectionNode(DTROS):
             )
             detection.type.type = int(cls)
             detection_list_msg.list.append(detection)
-
-            # Save valid detection index
             valid_detections.append(i)
 
+        # Update detection buffer - append True only once if any valid obstacle detected
+        self.detection_buffer.append(valid_obstacle_detected)
+        
+        # Handle timeout and stop logic
+        self._handle_obstacle_logic(image_msg)
+
+        # Publish detections
         self.pub_detections_list.publish(detection_list_msg)
 
-        # Filter valid detections
+        # Filter and return valid detections
         filtered_bboxes = np.array([updated_bboxes[i] for i in valid_detections])
         filtered_classes = np.array([updated_classes[i] for i in valid_detections])
         filtered_scores = np.array([updated_scores[i] for i in valid_detections])
 
-        # Return updated values for visualization, including scores
         return filtered_bboxes, filtered_classes, filtered_scores
 
+
+    def _handle_obstacle_logic(self, image_msg):
+        """Handle obstacle detection timeout and stop logic"""
+        current_time = rospy.Time.now()
+        
+        # Reset buffer if no valid detection in last 5s
+        if (current_time - self.last_detection_time).to_sec() > 5.0:
+            self.detection_buffer = deque([False] * 5, maxlen=5)
+
+        count_true = sum(self.detection_buffer)
+        should_stop = count_true >= 1
+
+        # Timeout logic
+        if should_stop:
+            if self.stop_start_time is None:
+                self.stop_start_time = current_time
+            elif (current_time - self.stop_start_time).to_sec() >= 5.0:
+                timeout_msg = BoolStamped()
+                timeout_msg.data = True
+                timeout_msg.header = image_msg.header
+                for _ in range(4):
+                    self.obstacle_timeout.publish(timeout_msg)
+        else:
+            self.stop_start_time = None
+
+        # Publish stop decision
+        msg = BoolStamped()
+        msg.data = should_stop
+        msg.header = image_msg.header
+        
+        if should_stop:
+            for _ in range(4):
+                self.obstacle_caused_stop.publish(msg)
+                rospy.sleep(0.05)
+        else:
+            self.obstacle_caused_stop.publish(msg)
+
+        # Debug logging for buffer state
+        if should_stop or any(self.detection_buffer):
+            self.log(f"Buffer: {list(self.detection_buffer)}, Should stop: {should_stop}, "
+                    f"Count: {count_true}/5")
+
     def visualize_detections(self, rgb, bboxes, classes, scores=None):
-        colors = {0: (0, 255, 255),  # duckie (yellow)
-                  1: (0, 165, 255),  # duckiebot (orange)
-                  2: (0, 250, 0),  # intersection_sign (green)
-                  3: (0, 0, 255),  # traffic_light (red)
-                  4: (255, 0, 0),  # stop_sign (blue)
-                  10: (0, 255, 255),  # pedestrian duck (yellow)
-                  11: (255, 127, 0),  # vehicle (blue)
-                  12: (192, 192, 192),  # other duckiebot (gray)
-                  30: (0, 0, 255),  # red_light (red)
-                  31: (0, 250, 0)}  # green_light (green)
-
-        names = {0: "duckie",
-                 1: "duckiebot",
-                 2: "intersection_sign",
-                 3: "traffic_light",
-                 4: "stop_sign",
-                 10: "pedestrian",
-                 11: "vehicle",
-                 12: "duckiebot",
-                 30: "red_light",
-                 31: "green_light"}
+        colors = {
+            0: (0, 255, 255),    # duckie (yellow)
+            1: (0, 165, 255),    # duckiebot (orange)
+            2: (0, 250, 0),      # intersection_sign (green)
+            3: (0, 0, 255),      # traffic_light (red)
+            4: (255, 0, 0),      # stop_sign (blue)
+            10: (0, 255, 255),   # pedestrian duck (yellow)
+            11: (255, 127, 0),   # vehicle (blue)
+            12: (192, 192, 192), # other duckiebot (gray)
+            30: (0, 0, 255),     # red_light (red)
+            31: (0, 250, 0)      # green_light (green)
+        }
+        
+        names = {
+            0: "duckie", 1: "duckiebot", 2: "intersection_sign", 3: "traffic_light", 4: "stop_sign",
+            10: "pedestrian", 11: "vehicle", 12: "duckiebot", 30: "red_light", 31: "green_light"
+        }
+        
         font = cv2.FONT_HERSHEY_SIMPLEX
-
-        # Make a copy of rgb to avoid modifying the original
         vis_img = rgb.copy()
-
-        # Precompute the same stop polygon for drawing
-
-        # define a distinct color for the stop polygon
+        
+        # Draw stop region polygon
         poly_color = (255, 0, 255)  # magenta
         poly_thickness = 2
-
         stop_poly = np.array([
             [0, IMAGE_SIZE],
             [IMAGE_SIZE, IMAGE_SIZE],
             [int(2 * IMAGE_SIZE / 3), int(IMAGE_SIZE / 4)],
             [int(IMAGE_SIZE / 3), int(IMAGE_SIZE / 4)]
         ], dtype=np.int32)
-        # draw the polygon boundary once
+        
         cv2.polylines(vis_img, [stop_poly], isClosed=True, color=poly_color, thickness=poly_thickness)
-
-
+        
+        # Handle empty detection arrays
+        if len(bboxes) == 0:
+            self.log("No detections to visualize")
+            # Still publish the image with just the polygon
+            bgr = vis_img[..., ::-1]
+            obj_det_img = self.bridge.cv2_to_compressed_imgmsg(bgr)
+            self.pub_detections_image.publish(obj_det_img)
+            return
+        
         for i, (clas, box) in enumerate(zip(classes, bboxes)):
-            clas = int(clas)  # Ensure class is an integer
+            clas = int(clas)
             if clas not in colors:
-                continue  # Skip if class is not in our colors dictionary
-
+                continue
+                
             pt1 = tuple(map(int, box[:2]))
             pt2 = tuple(map(int, box[2:]))
-            color = tuple(reversed(colors[clas]))
+            color = colors[clas]  # Use colors directly (already in BGR format)
             name = names.get(clas, f"unknown_{clas}")
-
+            
             # Add score to display text if available
             if scores is not None and i < len(scores):
                 score = scores[i]
                 display_text = f"{name}: {score:.2f}"
             else:
                 display_text = name
-
+            
             # Draw bounding box
             vis_img = cv2.rectangle(vis_img, pt1, pt2, color, 2)
-
+            
             # Draw text with score
             text_location = (pt1[0], min(pt2[1] + 30, IMAGE_SIZE))
             vis_img = cv2.putText(vis_img, display_text, text_location, font, 0.8, color, thickness=2)
-
-            # compute center
+            
+            # Compute center and test if inside stop region
             x1, y1, x2, y2 = pt1[0], pt1[1], pt2[0], pt2[1]
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-
-            # test inside stop region
             inside = cv2.pointPolygonTest(stop_poly, (cx, cy), False) >= 0
-
-            # mark center: green if OK, red if inside forbidden region
-            center_color = (0, 255, 0) if not inside else (0, 0, 255)
+            
+            # Mark center: red if inside stop region (danger), green if outside (safe)
+            center_color = (0, 0, 255) if inside else (0, 255, 0)  # Fixed logic
             cv2.circle(vis_img, (cx, cy), radius=5, color=center_color, thickness=-1)
-
-
+        
+        # Convert RGB to BGR and publish
         bgr = vis_img[..., ::-1]
         obj_det_img = self.bridge.cv2_to_compressed_imgmsg(bgr)
         self.pub_detections_image.publish(obj_det_img)
