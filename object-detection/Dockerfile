@@ -48,6 +48,23 @@ ENV DT_MODULE_TYPE="exercise" \
     DT_LAUNCH_PATH="${LAUNCH_PATH}" \
     DT_LAUNCHER="${LAUNCHER}"
 
+# Fix GPG key issue for ROS repository
+# Install gnupg and curl for key refresh
+# Install tools and fix GPG key issue for ROS repository
+# Uncomment those lines below
+
+# # Temporarily disable the ROS repo to install gnupg and curl without triggering the GPG error
+# RUN sed -i 's|^deb http://packages.ros.org/ros/ubuntu|#deb http://packages.ros.org/ros/ubuntu|' /etc/apt/sources.list /etc/apt/sources.list.d/*.list || true && \
+#     apt-get update && apt-get install -y gnupg curl && \
+#     curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
+#     sed -i 's|^#deb http://packages.ros.org/ros/ubuntu|deb http://packages.ros.org/ros/ubuntu|' /etc/apt/sources.list /etc/apt/sources.list.d/*.list
+#
+# # Copy apt dependencies list
+# COPY ./dependencies-apt.txt "${REPO_PATH}/"
+#
+# # Install listed apt dependencies
+# RUN dt-apt-install ${REPO_PATH}/dependencies-apt.txt
+
 # install apt dependencies
 COPY ./dependencies-apt.txt "${REPO_PATH}/"
 RUN dt-apt-install ${REPO_PATH}/dependencies-apt.txt
