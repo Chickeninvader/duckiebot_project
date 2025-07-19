@@ -135,10 +135,10 @@ def visualize_demo(hdf5_path, demo_number, fps=10):
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Visualize a specific demo from an HDF5 dataset.")
-    parser.add_argument("hdf5_path", type=str, nargs="?",
+    parser.add_argument("--hdf5_path", type=str, nargs="?",
                         default="converted_standard/all_demos_new.hdf5",
                         help="Path to the HDF5 dataset.")
-    parser.add_argument("demo_number", type=int, nargs="?",
+    parser.add_argument("--demo_number", type=int, nargs="?",
                         default=1,
                         help="Demo number to visualize (e.g., 1 for demo_1).")
     parser.add_argument("--fps", type=int, default=10,

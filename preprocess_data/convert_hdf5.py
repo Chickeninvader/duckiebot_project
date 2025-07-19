@@ -11,7 +11,10 @@ from cv_bridge import CvBridge
 from collections import deque
 
 
-def process_bag_files(process_sim, process_lab, process_human):
+def process_obstacle_avoidance_bags(process_sim=True, process_lab=True):
+    """
+    Process obstacle avoidance bag files, filtering by FSM states to include only relevant autonomous phases.
+    """
     # Define input folders and output HDF5 file
     base_folder = "record"
     output_dir = "record/converted_standard"
@@ -20,7 +23,7 @@ def process_bag_files(process_sim, process_lab, process_human):
     # Constants for duckiebot
     OMEGA_MAX = 8.0
 
-    # Define dataset search criteria
+    # Define dataset search criteria - only obstacle_avoidance and lane_following folders
     record_types = {"sim_record": "vchicinvabot", "lab_record": "chicinvabot"}
     bag_files = []
 
@@ -33,14 +36,23 @@ def process_bag_files(process_sim, process_lab, process_human):
         "min_omega": float('inf'),
         "max_omega": float('-inf'),
         "total_frames": 0,
-        "human_demos": 0,
-        "non_human_demos": 0,
+        "lane_following_demos": 0,
+        "obstacle_avoidance_demos": 0,
         "errors": [],
-        "skipped_files": []
+        "skipped_files": [],
+        "fsm_state_counts": {}
     }
 
-    # Find all bag files
-    print("Searching for bag files...")
+    # FSM states to include in the dataset
+    VALID_FSM_STATES = {
+        "LANE_FOLLOWING",
+        "SWITCH_LANE_LEFT",
+        "OBSTACLE_AVOIDANCE",
+        "SWITCH_LANE_RIGHT",
+        "INTERSECTION_COORDINATION"
+    }
+
+    print("Searching for obstacle avoidance and lane following bag files...")
     for record_type, robot_name in record_types.items():
         if (record_type == "sim_record" and not process_sim) or (record_type == "lab_record" and not process_lab):
             continue
@@ -50,15 +62,18 @@ def process_bag_files(process_sim, process_lab, process_human):
             print(f"Warning: Path {record_path} does not exist")
             continue
 
-        for root, _, files in os.walk(record_path):
-            is_human = "human_control" in root
-            if process_human is not None and is_human != process_human:
+        # Look for both lane_following and obstacle_avoidance folders
+        for demo_type in ["lane_following", "obstacle_avoidance"]:
+            demo_path = os.path.join(record_path, demo_type)
+            if not os.path.exists(demo_path):
+                print(f"Warning: Path {demo_path} does not exist")
                 continue
 
-            for file in files:
-                if file.endswith(".bag"):
-                    bag_files.append((os.path.join(root, file), record_type, robot_name, is_human))
-                    stats["num_bag_files"] += 1
+            for root, _, files in os.walk(demo_path):
+                for file in files:
+                    if file.endswith(".bag"):
+                        bag_files.append((os.path.join(root, file), record_type, robot_name, demo_type))
+                        stats["num_bag_files"] += 1
 
     print(f"Found {stats['num_bag_files']} bag files to process")
 
@@ -67,14 +82,14 @@ def process_bag_files(process_sim, process_lab, process_human):
         return
 
     # Generate output filename
-    output_filename = "sim" if process_sim else "lab"
-    if process_human is True:
-        output_filename += "_human"
-    elif process_human is False:
-        output_filename += "_nonhuman"
-    else:
-        output_filename += "_both"
-    output_filename += ".hdf5"
+    output_filename = ""
+    if process_sim and process_lab:
+        output_filename = "sim_lab"
+    elif process_sim:
+        output_filename = "sim"
+    elif process_lab:
+        output_filename = "lab"
+    output_filename += "_obstacle_avoidance.hdf5"
     hdf5_path = os.path.join(output_dir, output_filename)
 
     # Topics of interest
@@ -82,6 +97,8 @@ def process_bag_files(process_sim, process_lab, process_human):
                     "lab_record": "/chicinvabot/camera_node/image/compressed"}
     cmd_topics = {"sim_record": "/vchicinvabot/car_cmd_switch_node/cmd",
                   "lab_record": "/chicinvabot/car_cmd_switch_node/cmd"}
+    fsm_topics = {"sim_record": "/vchicinvabot/fsm_node/mode",
+                  "lab_record": "/chicinvabot/fsm_node/mode"}
 
     # Initialize HDF5 file
     try:
@@ -95,11 +112,10 @@ def process_bag_files(process_sim, process_lab, process_human):
 
     # Process each bag file
     successful_demos = 0
-    for idx, (bag_path, record_type, robot_name, is_human) in enumerate(bag_files, start=1):
+    for idx, (bag_path, record_type, robot_name, demo_type) in enumerate(bag_files, start=1):
         try:
-
             print(f"\nProcessing [{idx}/{stats['num_bag_files']}] {bag_path} as demo_{successful_demos+1}...")
-            print(f"  Type: {record_type}, Human control: {is_human}")
+            print(f"  Type: {record_type}, Demo type: {demo_type}")
 
             # Verify file exists
             if not os.path.exists(bag_path):
@@ -132,23 +148,28 @@ def process_bag_files(process_sim, process_lab, process_human):
 
                 image_topic = image_topics[record_type]
                 cmd_topic = cmd_topics[record_type]
+                fsm_topic = fsm_topics[record_type]
 
-                if image_topic not in topics:
-                    print(f"  Error: Image topic {image_topic} not found in bag file")
-                    stats["errors"].append(f"Missing image topic in {bag_path}")
-                    stats["skipped_files"].append(bag_path)
-                    bag.close()
-                    continue
+                required_topics = [image_topic, cmd_topic]
+                # FSM topic is optional for lane_following demos
+                if demo_type == "obstacle_avoidance":
+                    required_topics.append(fsm_topic)
 
-                if cmd_topic not in topics:
-                    print(f"  Error: Command topic {cmd_topic} not found in bag file")
-                    stats["errors"].append(f"Missing command topic in {bag_path}")
-                    stats["skipped_files"].append(bag_path)
-                    bag.close()
+                for topic in required_topics:
+                    if topic not in topics:
+                        print(f"  Error: Required topic {topic} not found in bag file")
+                        stats["errors"].append(f"Missing topic {topic} in {bag_path}")
+                        stats["skipped_files"].append(bag_path)
+                        bag.close()
+                        continue
+
+                if any(topic not in topics for topic in required_topics):
                     continue
 
                 print(f"  Image topic messages: {topics[image_topic].message_count}")
                 print(f"  Command topic messages: {topics[cmd_topic].message_count}")
+                if fsm_topic in topics:
+                    print(f"  FSM topic messages: {topics[fsm_topic].message_count}")
 
                 if topics[image_topic].message_count == 0:
                     print(f"  Error: No messages on image topic")
@@ -175,14 +196,21 @@ def process_bag_files(process_sim, process_lab, process_human):
             timestamps, images, actions = [], [], []
             velocities, omegas = [], []
             action_queue = deque()
+            fsm_state_queue = deque()
             latest_action = [0.0, 0.0]
+            current_fsm_state = None
+
+            # Read all topics for processing
+            topics_to_read = [image_topic, cmd_topic]
+            if fsm_topic in topics:
+                topics_to_read.append(fsm_topic)
 
             # Count messages for progress tracking
-            total_messages = topics[image_topic].message_count + topics[cmd_topic].message_count
+            total_messages = sum(topics[topic].message_count for topic in topics_to_read if topic in topics)
             processed_messages = 0
 
             try:
-                for topic, msg, t in bag.read_messages(topics=[image_topic, cmd_topic]):
+                for topic, msg, t in bag.read_messages(topics=topics_to_read):
                     processed_messages += 1
                     if processed_messages % 100 == 0:
                         print(f"  Processing message {processed_messages}/{total_messages}")
@@ -203,17 +231,57 @@ def process_bag_files(process_sim, process_lab, process_human):
                         stats["min_omega"] = min(stats["min_omega"], omega)
                         stats["max_omega"] = max(stats["max_omega"], omega)
 
+                    elif topic == fsm_topic:
+                        # Handle FSM state message - could be different message types
+                        if hasattr(msg, 'state'):
+                            fsm_state = msg.state
+                        elif hasattr(msg, 'data'):
+                            fsm_state = msg.data
+                        else:
+                            fsm_state = str(msg)
+
+                        current_fsm_state = fsm_state
+                        fsm_state_queue.append((timestamp, fsm_state))
+
+                        # Update FSM state statistics
+                        if fsm_state not in stats["fsm_state_counts"]:
+                            stats["fsm_state_counts"][fsm_state] = 0
+                        stats["fsm_state_counts"][fsm_state] += 1
+
                     elif topic == image_topic:
                         try:
                             frame = bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
+
+                            # Clean up old actions
                             while action_queue and action_queue[0][0] < timestamp - 0.1:
                                 action_queue.popleft()
+
+                            # Clean up old FSM states
+                            while fsm_state_queue and fsm_state_queue[0][0] < timestamp - 0.5:
+                                fsm_state_queue.popleft()
+
                             action = latest_action if action_queue else [0.0, 0.0]
 
+                            # For obstacle_avoidance demos, filter by FSM state
+                            if demo_type == "obstacle_avoidance":
+                                # Find the most recent FSM state
+                                relevant_fsm_state = None
+                                if fsm_state_queue:
+                                    # Get the most recent FSM state
+                                    _, relevant_fsm_state = fsm_state_queue[-1]
+                                elif current_fsm_state:
+                                    relevant_fsm_state = current_fsm_state
+
+                                # Skip frames that are not in valid FSM states
+                                if relevant_fsm_state not in VALID_FSM_STATES:
+                                    continue
+
+                            # Include this frame
                             timestamps.append(timestamp)
                             images.append(frame)
                             actions.append(action)
                             stats["total_frames"] += 1
+
                         except Exception as e:
                             print(f"  Error processing image: {str(e)}")
                             continue
@@ -239,8 +307,6 @@ def process_bag_files(process_sim, process_lab, process_human):
             timestamps = np.array(timestamps)
             images = np.array(images)
             actions = np.array(actions)
-            velocities = np.array(velocities) if velocities else np.array([])
-            omegas = np.array(omegas) if omegas else np.array([])
 
             # Ensure we have consistent data
             if len(images) != len(actions) or len(images) != len(timestamps):
@@ -262,10 +328,10 @@ def process_bag_files(process_sim, process_lab, process_human):
             # Update demo statistics
             successful_demos += 1
             stats["num_demos"] += 1
-            if is_human:
-                stats["human_demos"] += 1
-            else:
-                stats["non_human_demos"] += 1
+            if demo_type == "lane_following":
+                stats["lane_following_demos"] += 1
+            elif demo_type == "obstacle_avoidance":
+                stats["obstacle_avoidance_demos"] += 1
 
             # Write to HDF5 file
             try:
@@ -275,7 +341,8 @@ def process_bag_files(process_sim, process_lab, process_human):
                     grp.attrs.update({
                         "num_samples": num_samples,
                         "frame_rate": frame_rate,
-                        "human": int(is_human),
+                        "demo_type": demo_type,
+                        "record_type": record_type,
                         "source_file": os.path.basename(bag_path)
                     })
                     grp.create_dataset("obs/observation", data=images[:-1])
@@ -297,16 +364,16 @@ def process_bag_files(process_sim, process_lab, process_human):
             stats["errors"].append(f"Unexpected error with {bag_path}: {str(e)}")
             stats["skipped_files"].append(bag_path)
 
-    # Print statistics for this configuration
-    print("\n" + "="*50)
+    # Print statistics
+    print("\n" + "="*60)
     print(f"STATISTICS FOR {hdf5_path}")
-    print("="*50)
+    print("="*60)
     print(f"Number of bag files found: {stats['num_bag_files']}")
     print(f"Number of bag files processed: {stats['num_demos']}")
     print(f"Number of bag files skipped: {len(stats['skipped_files'])}")
     print(f"Number of errors encountered: {len(stats['errors'])}")
-    print(f"Human-controlled demos: {stats['human_demos']}")
-    print(f"Non-human-controlled demos: {stats['non_human_demos']}")
+    print(f"Lane following demos: {stats['lane_following_demos']}")
+    print(f"Obstacle avoidance demos: {stats['obstacle_avoidance_demos']}")
     print(f"Total frames: {stats['total_frames']}")
 
     if stats['min_velocity'] != float('inf'):
@@ -319,24 +386,38 @@ def process_bag_files(process_sim, process_lab, process_human):
     else:
         print("No omega data found")
 
+    # Print FSM state statistics
+    if stats['fsm_state_counts']:
+        print("\nFSM State Distribution:")
+        for state, count in sorted(stats['fsm_state_counts'].items()):
+            print(f"  {state}: {count} messages")
+
     # Print first few errors if any
     if stats['errors']:
-        print("\nFirst 5 errors:")
+        print(f"\nFirst 5 errors:")
         for i, error in enumerate(stats['errors'][:5]):
             print(f"{i+1}. {error}")
 
-    print("="*50 + "\n")
+    print("="*60 + "\n")
 
     # Save statistics to JSON
     stats_filename = os.path.splitext(output_filename)[0] + "_stats.json"
     stats_path = os.path.join(output_dir, stats_filename)
+    # Convert any numpy types to Python types for JSON serialization
+    json_stats = {}
+    for key, value in stats.items():
+        if isinstance(value, (np.integer, np.floating)):
+            json_stats[key] = value.item()
+        else:
+            json_stats[key] = value
+
     with open(stats_path, 'w') as f:
-        json.dump(stats, f, indent=4)
+        json.dump(json_stats, f, indent=4)
 
 
-def analyze_hdf5_file(hdf5_path):
+def analyze_obstacle_avoidance_hdf5(hdf5_path):
     """
-    Function to analyze an existing HDF5 file and print statistics
+    Function to analyze an existing obstacle avoidance HDF5 file and print statistics
     """
     if not os.path.exists(hdf5_path):
         print(f"File not found: {hdf5_path}")
@@ -344,13 +425,14 @@ def analyze_hdf5_file(hdf5_path):
 
     stats = {
         "num_demos": 0,
-        "human_demos": 0,
-        "non_human_demos": 0,
+        "lane_following_demos": 0,
+        "obstacle_avoidance_demos": 0,
         "total_frames": 0,
         "min_velocity": float('inf'),
         "max_velocity": float('-inf'),
         "min_omega": float('inf'),
-        "max_omega": float('-inf')
+        "max_omega": float('-inf'),
+        "demo_types": {}
     }
 
     with h5py.File(hdf5_path, 'r') as f:
@@ -363,12 +445,16 @@ def analyze_hdf5_file(hdf5_path):
             demo = data_group[demo_name]
             stats["num_demos"] += 1
 
-            # Get human attribute
-            is_human = demo.attrs.get('human', 0)
-            if is_human:
-                stats["human_demos"] += 1
-            else:
-                stats["non_human_demos"] += 1
+            # Get demo type attribute
+            demo_type = demo.attrs.get('demo_type', 'unknown')
+            if demo_type == 'lane_following':
+                stats["lane_following_demos"] += 1
+            elif demo_type == 'obstacle_avoidance':
+                stats["obstacle_avoidance_demos"] += 1
+
+            if demo_type not in stats["demo_types"]:
+                stats["demo_types"][demo_type] = 0
+            stats["demo_types"][demo_type] += 1
 
             # Get actions dataset
             if 'actions' in demo:
@@ -389,12 +475,12 @@ def analyze_hdf5_file(hdf5_path):
                     stats["max_omega"] = max(stats["max_omega"], np.max(omegas))
 
     # Print statistics
-    print("\n" + "="*50)
-    print(f"STATISTICS FOR {hdf5_path}")
-    print("="*50)
+    print("\n" + "="*60)
+    print(f"ANALYSIS FOR {hdf5_path}")
+    print("="*60)
     print(f"Number of demos: {stats['num_demos']}")
-    print(f"Human-controlled demos: {stats['human_demos']}")
-    print(f"Non-human-controlled demos: {stats['non_human_demos']}")
+    print(f"Lane following demos: {stats['lane_following_demos']}")
+    print(f"Obstacle avoidance demos: {stats['obstacle_avoidance_demos']}")
     print(f"Total frames: {stats['total_frames']}")
 
     if stats['min_velocity'] != float('inf'):
@@ -406,13 +492,27 @@ def analyze_hdf5_file(hdf5_path):
         print(f"Omega range (normalized): {stats['min_omega']:.3f} to {stats['max_omega']:.3f}")
     else:
         print("No omega data found")
-    print("="*50 + "\n")
+
+    if stats['demo_types']:
+        print("\nDemo Type Distribution:")
+        for demo_type, count in sorted(stats['demo_types'].items()):
+            print(f"  {demo_type}: {count} demos")
+
+    print("="*60 + "\n")
 
 
-# Run the function for all configurations
-for sim in [True, False]:
-    for human in [True, False, None]:
-        process_bag_files(process_sim=sim, process_lab=not sim, process_human=human)
+if __name__ == "__main__":
+    # Process all configurations
+    print("Processing simulation data...")
+    process_obstacle_avoidance_bags(process_sim=True, process_lab=False)
 
-# To analyze existing HDF5 files, you can use:
-analyze_hdf5_file("record/converted_standard/sim_human.hdf5")
+    print("\nProcessing lab data...")
+    process_obstacle_avoidance_bags(process_sim=False, process_lab=True)
+
+    print("\nProcessing both sim and lab data...")
+    process_obstacle_avoidance_bags(process_sim=True, process_lab=True)
+
+    # Example usage for analysis:
+    # analyze_obstacle_avoidance_hdf5("record/converted_standard/sim_obstacle_avoidance.hdf5")
+    # analyze_obstacle_avoidance_hdf5("record/converted_standard/lab_obstacle_avoidance.hdf5")
+    # analyze_obstacle_avoidance_hdf5("record/converted_standard/sim_lab_obstacle_avoidance.hdf5")
